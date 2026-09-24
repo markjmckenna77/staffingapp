@@ -1,0 +1,12 @@
+node_modules
+.next
+out
+.env
+.env.local
+.env.*.local
+*.pem
+*.p8
+.vercel
+.DS_Store
+tsconfig.tsbuildinfo
+next-env.d.ts

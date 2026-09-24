@@ -1,0 +1,69 @@
+/* Token system carried over from the staffing dashboard (light/dark). */
+:root {
+  --bg: #f7f8fa;
+  --surface: #ffffff;
+  --text: #1a1d23;
+  --muted: #5b6270;
+  --border: #e2e5ea;
+  --accent: #2563eb;
+  --good: #1f8f5f;
+  --warn: #c98a12;
+  --serious: #d9612c;
+  --critical: #c0392b;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1216;
+    --surface: #171b21;
+    --text: #e7e9ee;
+    --muted: #9aa3b2;
+    --border: #262c36;
+    --accent: #60a5fa;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1216;
+  --surface: #171b21;
+  --text: #e7e9ee;
+  --muted: #9aa3b2;
+  --border: #262c36;
+  --accent: #60a5fa;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+a { color: var(--accent); text-decoration: none; }
+main { max-width: 1200px; margin: 0 auto; padding: 24px 16px; }
+h1 { font-size: 20px; margin: 0 0 4px; }
+.muted { color: var(--muted); }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 16px;
+}
+.topbar {
+  display: flex; justify-content: space-between; align-items: center; gap: 16px;
+  border-bottom: 1px solid var(--border); padding-bottom: 12px;
+}
+button, .btn {
+  background: var(--accent); color: #fff; border: 0; border-radius: 6px;
+  padding: 8px 14px; font: inherit; cursor: pointer;
+}
+button.secondary { background: transparent; color: var(--text); border: 1px solid var(--border); }
+table { border-collapse: collapse; width: 100%; }
+th, td { text-align: right; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+th:first-child, td:first-child { text-align: left; }
+.wk-above { color: var(--good); }
+.wk-warning { color: var(--warn); }
+.wk-serious { color: var(--serious); }
+.wk-critical { color: var(--critical); }
