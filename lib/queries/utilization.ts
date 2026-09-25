@@ -31,7 +31,7 @@ export async function utilizationByPractice(year: number): Promise<PracticeMonth
     select PRACTICE, DATE_MONTH_ID,
            sum(HRS_BILLABLE)   as HRS_BILLABLE,
            sum(HRS_UTIL_DENOM) as HRS_UTIL_DENOM
-    from CONS_WEEKLY_AVAILABILITY
+    from WEEKLY_AVAILABILITY
     where DATE_YEAR_ID = :1
       and RELATIONSHIP = 'Direct'
       and PRACTICE <> 'Grand Total'
@@ -43,7 +43,7 @@ export async function utilizationByPractice(year: number): Promise<PracticeMonth
   // Fold practice variants and re-aggregate.
   const agg = new Map<string, PracticeMonth>();
   for (const raw of rows) {
-    const r = filterRow("CONS_WEEKLY_AVAILABILITY", raw) as typeof raw;
+    const r = filterRow("WEEKLY_AVAILABILITY", raw) as typeof raw;
     const practice = PRACTICE_FOLD[r.PRACTICE] ?? r.PRACTICE;
     const key = `${practice}|${r.DATE_MONTH_ID}`;
     const cur = agg.get(key) ?? {

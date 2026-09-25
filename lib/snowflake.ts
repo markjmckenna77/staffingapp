@@ -24,7 +24,7 @@ function getConnection(): Promise<snowflake.Connection> {
       role: required("SNOWFLAKE_ROLE"),
       warehouse: required("SNOWFLAKE_WAREHOUSE"),
       database: process.env.SNOWFLAKE_DATABASE ?? "PRD_BI_SUITE",
-      schema: process.env.SNOWFLAKE_SCHEMA ?? "CONS_BI",
+      schema: process.env.SNOWFLAKE_SCHEMA ?? "STAFFING_APP",
       authenticator: "SNOWFLAKE_JWT",
       privateKey: privateKey(),
       privateKeyPass: process.env.SNOWFLAKE_PRIVATE_KEY_PASSPHRASE || undefined,

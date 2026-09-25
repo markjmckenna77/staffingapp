@@ -40,24 +40,20 @@ flow can be deployed and tested before the service account exists.
 
 ## Snowflake service account
 
-    create user SVC_STAFFING_APP type = service default_role = STAFFING_APP_RO;
-    create role STAFFING_APP_RO;
-    grant usage on database PRD_BI_SUITE to role STAFFING_APP_RO;
-    grant usage on schema PRD_BI_SUITE.CONS_BI to role STAFFING_APP_RO;
-    grant usage on warehouse <WH> to role STAFFING_APP_RO;
-    -- Prefer views that exclude cost columns over table-level grants:
-    grant select on view PRD_BI_SUITE.CONS_BI.CONS_WEEKLY_AVAILABILITY to role STAFFING_APP_RO;
-    grant select on view PRD_BI_SUITE.CONS_BI.CONS_PROJECT_TIME to role STAFFING_APP_RO;
-    grant role STAFFING_APP_RO to user SVC_STAFFING_APP;
-    alter user SVC_STAFFING_APP set rsa_public_key = '<public key body>';
+Run `snowflake/setup.sql` as ACCOUNTADMIN. It creates role `STAFFING_APP_RO`, service user
+`SVC_STAFFING_APP` (key-pair auth, public key embedded), and a schema
+`PRD_BI_SUITE.STAFFING_APP` of views over `CONS_BI` that omit every cost column. The role is
+granted only those views, never the raw tables.
 
-Generate the key pair with `openssl genrsa 2048 | openssl pkcs8 -topk8 -nocrypt -out rsa_key.p8`
-and `openssl rsa -in rsa_key.p8 -pubout -out rsa_key.pub`.
+To rotate the key: `openssl genrsa 2048 | openssl pkcs8 -topk8 -nocrypt -out rsa_key.p8`,
+`openssl rsa -in rsa_key.p8 -pubout -out rsa_key.pub`, put the public key body in
+`alter user SVC_STAFFING_APP set rsa_public_key = '...'`, and the private key (newlines
+escaped as `\n`) in `SNOWFLAKE_PRIVATE_KEY`.
 
 ## Data guardrails
 
 Cost, salary, pay-rate, margin and revenue columns never reach the browser. Enforced twice:
-by the Snowflake role's grants, and by `lib/allowlist.ts` (per-table column allowlist plus banned
+by the Snowflake role's grants (views only, no cost columns), and by `lib/allowlist.ts` (per-table column allowlist plus banned
 name patterns checked on every query). Adding a column is a reviewed change to that file.
 
 ## Deploy

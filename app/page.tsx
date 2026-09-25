@@ -33,7 +33,7 @@ export default async function Home() {
         ) : (
           <p className="muted">
             Snowflake is not configured yet. Add the SNOWFLAKE_* environment variables (see .env.example)
-            and this section will populate from CONS_WEEKLY_AVAILABILITY.
+            and this section will populate from the STAFFING_APP views.
           </p>
         )}
       </section>
