@@ -39,6 +39,11 @@ export async function GET() {
   .sa-bar a:hover{text-decoration:underline}
   .sa-bar a.sa-btn{color:#c9d1d9;border:1px solid #3a424c;border-radius:5px;padding:3px 10px}
   .sa-bar a.sa-btn:hover{border-color:#9ecbff;color:#fff;text-decoration:none}
+  /* The bar is sticky and above everything, so anything the dashboard pins to the top of the
+     viewport must start below it: the comment/allocation drawer (its title and × close button
+     were hidden under the bar, Oct 2 2026) and the 8 Week Outlook's sticky week header. */
+  .ct-drawer,.ct-scrim{top:var(--sa-bar-h,37px)!important}
+  #staff-grid thead th{top:var(--sa-bar-h,37px)!important}
 </style>
 <div class="sa-bar">
   <b>Cleartelligence Staffing</b>
@@ -46,7 +51,15 @@ export async function GET() {
   <span class="sa-sp"></span>
   <span>${esc(email)}</span>
   <a class="sa-btn" href="/api/auth/signout">Sign out</a>
-</div>`;
+</div>
+<script>
+(function(){
+  var bar=document.querySelector(".sa-bar");if(!bar)return;
+  function fit(){document.documentElement.style.setProperty("--sa-bar-h",bar.offsetHeight+"px");}
+  fit();window.addEventListener("resize",fit);
+  if(window.ResizeObserver)new ResizeObserver(fit).observe(bar);
+})();
+</script>`;
 
   const out = html.replace(/<body([^>]*)>/i, (m) => m + bar);
 
