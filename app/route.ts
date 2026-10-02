@@ -4,6 +4,9 @@
 // (see staffing-dashboard-refresh-runbook.md) and committed here as a static file. This
 // route wraps it with a slim session bar. /live hosts the Snowflake-backed sections as they
 // are ported (phase 1); each one replaces its static counterpart once verified.
+//
+// The wrapper also injects public/sa-shim.js, which gives the page the window.claude.use("db")
+// store it was written against, backed by /api/db (Postgres) instead of the claude.ai artifact.
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { auth } from "@/auth";
@@ -16,9 +19,20 @@ function esc(s: string): string {
   return s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c] as string));
 }
 
+// The page's "this copy can't reach claude.ai" notes no longer describe the failure mode: the
+// store is here now, so an outage means the database is unreachable or not configured yet.
+const STORE_DOWN = "The shared store isn't reachable right now - check that the database is configured for this deployment.";
+const OFFLINE_NOTES = [
+  "Comments work on the live dashboard page on claude.ai - this copy can't save them.",
+  "The shared agenda works on the live dashboard page on claude.ai - this copy can't reach it.",
+  "The meeting log lives on the live dashboard page on claude.ai - this copy can't reach it.",
+  "Action items live on the live dashboard page on claude.ai - this copy can't reach them.",
+];
+
 export async function GET() {
   const session = await auth();
   const email = session?.user?.email ?? "";
+  const name = session?.user?.name ?? "";
 
   let html: string;
   try {
@@ -44,6 +58,9 @@ export async function GET() {
      were hidden under the bar, Oct 2 2026) and the 8 Week Outlook's sticky week header. */
   .ct-drawer,.ct-scrim{top:var(--sa-bar-h,37px)!important}
   #staff-grid thead th{top:var(--sa-bar-h,37px)!important}
+  /* Oct 2 2026 (Mark): the standalone Action Items panel is retired - action items live in the
+     Meeting Log's "Open actions" view, fed by the ✎ drawers and the Granola import. */
+  #action-items{display:none!important}
 </style>
 <div class="sa-bar">
   <b>Cleartelligence Staffing</b>
@@ -53,15 +70,18 @@ export async function GET() {
   <a class="sa-btn" href="/api/auth/signout">Sign out</a>
 </div>
 <script>
+window.__saUser=${JSON.stringify({ email, name })};
 (function(){
   var bar=document.querySelector(".sa-bar");if(!bar)return;
   function fit(){document.documentElement.style.setProperty("--sa-bar-h",bar.offsetHeight+"px");}
   fit();window.addEventListener("resize",fit);
   if(window.ResizeObserver)new ResizeObserver(fit).observe(bar);
 })();
-</script>`;
+</script>
+<script src="/sa-shim.js"></script>`;
 
-  const out = html.replace(/<body([^>]*)>/i, (m) => m + bar);
+  let out = html.replace(/<body([^>]*)>/i, (m) => m + bar);
+  for (const note of OFFLINE_NOTES) out = out.split(note).join(STORE_DOWN);
 
   return new Response(out, {
     headers: {

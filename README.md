@@ -61,6 +61,25 @@ name patterns checked on every query). Adding a column is a reviewed change to t
 Vercel project connected to this repo; `main` deploys to production, branches get preview URLs.
 Set the environment variables in Vercel → Project → Settings → Environment Variables.
 
+## Shared store (Postgres)
+
+The Meeting Log, agenda, action items, proposed allocations and weekly snapshots live in Postgres
+(`lib/store.ts`, `/api/db/*`), replacing the claude.ai artifact database as of Oct 2 2026. The
+dashboard page itself is unchanged: `public/sa-shim.js` (injected by `app/route.ts`) gives it the
+`window.claude.use("db")` API it was written against, polling `/api/db` every 4 s. Documents are
+schemaless JSON keyed by collection + id; every write is journaled in `doc_log` with the actor.
+
+- First deploy: create the Postgres store in Vercel (Storage → Postgres/Neon → connect to the
+  project), then load the old data at `/admin/import` with the `claude-artifact-export-*.json` file.
+- Action items no longer have a standalone panel; they appear in Meeting Log → Open actions.
+- Granola: a scheduled Claude task posts the Monday resource-meeting notes to
+  `POST /api/meeting-log/import` (bearer `IMPORT_TOKEN`). Summary and decisions become comments
+  on the "Meeting notes (Granola)" thread; action items become action items; the raw payload
+  is kept in `meetings/<week>`.
+- Certinia: marking an allocation entered (`PATCH /api/db/allocations/:id {status:"entered"}`)
+  writes the assignment to Salesforce first via `lib/certinia.ts` when `SF_*` is configured
+  (dry run until `SF_ENTER_ENABLED=true`); only approvers (`APPROVER_EMAILS`/`ADMIN_EMAILS`) can.
+
 ## Roadmap
 
 1. Port the existing dashboard sections onto live data (this phase).
