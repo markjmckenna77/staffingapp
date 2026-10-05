@@ -77,22 +77,33 @@
   }
 
   function apply(name, list) {
-    var c = col(name);
+    var c = col(name), changed = 0;
     (list || []).forEach(function (d) {
       var cur = c.docs[d.id];
       if (cur && cur.updated > d.updated) return;         // local write newer than the poll
+      if (cur && cur.updated === d.updated && cur.deleted === !!d.deleted) return;   // same version: nothing to redraw
       c.docs[d.id] = { body: d.body || {}, deleted: !!d.deleted, updated: d.updated || 0 };
+      changed++;
     });
+    return changed;
   }
 
   function fetchCollections(names, cursor) {
     if (!names.length) return Promise.resolve();
     return request("GET", API + "?c=" + encodeURIComponent(names.join(",")) + (cursor ? "&since=" + cursor : ""))
       .then(function (j) {
-        names.forEach(function (n) { apply(n, j.collections && j.collections[n]); col(n).loaded = true; });
+        // Emit only for collections that actually changed (or on their first load): a snapshot per
+        // 4-second poll re-rendered the whole page and closed any form the viewer was typing in.
+        var dirty = [];
+        names.forEach(function (n) {
+          var first = !col(n).loaded;
+          var changed = apply(n, j.collections && j.collections[n]);
+          col(n).loaded = true;
+          if (first || changed) dirty.push(n);
+        });
         if (!cursor || j.now > since) since = j.now;
         offline = false;
-        names.forEach(emit);
+        dirty.forEach(emit);
       });
   }
 

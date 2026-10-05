@@ -2716,6 +2716,10 @@ tr.util-org-row td { color: var(--text-secondary); padding-top: 4px; padding-bot
 
   function renderDrawer() {
     if (!S.openKey || drawer.hidden) return;
+    /* A form the user is filling in must survive the store's periodic re-render (Mark, Oct 5
+       2026): while the same form is open for the same subject, leave the drawer as it is. */
+    var held = drawer.querySelector('.ct-form[data-form="' + formOpen + '"]');
+    if (formOpen && held && held.dataset.key === S.openKey) return;
     var key = S.openKey;
     var t = S.threads[key] || { comments: [] };
     var comments = (t.comments || []).slice().sort(function (a, b) { return b.ts - a.ts; });
@@ -2740,8 +2744,8 @@ tr.util-org-row td { color: var(--text-secondary); padding-top: 4px; padding-bot
     clear(drBody);
 
     /* forms */
-    if (formOpen === "action") drBody.appendChild(actionForm(key));
-    if (formOpen === "alloc") drBody.appendChild(allocForm(key));
+    if (formOpen === "action") { var fa = actionForm(key); fa.dataset.key = key; drBody.appendChild(fa); }
+    if (formOpen === "alloc") { var fb = allocForm(key); fb.dataset.key = key; drBody.appendChild(fb); }
 
     /* linked items */
     var acts = S.actions.filter(function (a) { return a.key === key && !a.done; });
@@ -2805,6 +2809,7 @@ tr.util-org-row td { color: var(--text-secondary); padding-top: 4px; padding-bot
   /* --------------------------------------------------------- action items -- */
   function actionForm(key) {
     var f = el("div", "ct-form");
+    f.dataset.form = "action";
     f.appendChild(el("h4", null, "New action item"));
     var text = field(f, "What", "input", { placeholder: "e.g. confirm Proceed IX start date with the client" });
     var owner = field(f, "Owner", "input", { placeholder: "name", value: S.author || "" });
@@ -2901,6 +2906,7 @@ tr.util-org-row td { color: var(--text-secondary); padding-top: 4px; padding-bot
   /* ---------------------------------------------------------- allocations -- */
   function allocForm(key) {
     var f = el("div", "ct-form");
+    f.dataset.form = "alloc";
     var head = el("h4", null, "Allocate a consultant");
     f.appendChild(head);
 
