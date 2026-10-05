@@ -874,35 +874,14 @@ tr.util-org-row td { color: var(--text-secondary); padding-top: 4px; padding-bot
 #roles-table .alloc-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 #roles-table .alloc-other { margin-top: 6px; }
 #roles-table .alloc-btn-other { margin-left: 0; background: none; }
-/* ---- Oct 5 2026 (Mark): Recruiting Activity as one table with stage filters */
-.rec-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 10px; }
-.rec-chip { font: 600 11px/1.6 inherit; font-family: inherit; color: var(--text-secondary); background: var(--surface-1);
-  border: 1px solid var(--gridline); border-radius: 999px; padding: 1px 10px; cursor: pointer; }
-.rec-chip span { font-weight: 500; color: var(--muted-ink); margin-left: 3px; }
-.rec-chip:hover { border-color: var(--accent); color: var(--accent); }
-.rec-chip-on, .rec-chip-on:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
-.rec-chip-on span { color: rgba(255,255,255,0.8); }
-.rec-chip-sep { width: 1px; height: 18px; background: var(--gridline); margin: 0 6px; }
-.rec-table-wrap { overflow-x: auto; }
-.rec-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
-.rec-table th { text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted-ink);
-  padding: 6px 8px; border-bottom: 1px solid var(--gridline); white-space: nowrap; }
-.rec-table td { padding: 7px 8px; border-bottom: 1px solid var(--gridline); vertical-align: top; color: var(--text-primary); }
-.rec-table th.num, .rec-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
-.rec-table tr[hidden] { display: none; }
-.rec-table tr.rec-row-bg td { background: color-mix(in srgb, var(--status-warning) 9%, transparent); }
-.rec-table .rec-req { min-width: 200px; }
-.rec-table .rec-who { font-size: 10.5px; color: var(--muted-ink); }
-.rec-table .rec-upd { min-width: 260px; color: var(--text-secondary); }
-.rec-table .rec-sub { font-size: 10px; color: var(--muted-ink); }
-.rec-stg { font-weight: 700; white-space: nowrap; }
-.rec-stg-bg { color: var(--status-warning); }
-.rec-stg-filled { color: var(--status-good); }
-.rec-stg-offer { color: var(--accent); }
-.rec-table tr.rec-empty td { color: var(--muted-ink); font-style: italic; text-align: center; }
-.rec-lines { margin-top: 12px; display: grid; gap: 6px; font-size: 11.5px; }
-.rec-line b { margin-right: 6px; }
-.rec-note-inline { display: block; font-size: 10.5px; color: var(--muted-ink); font-style: italic; }
+/* ---- Oct 5 2026 (Mark): Waiting on background check */
+.rec-col-bg .section4-subhead .count-chip { margin-left: 6px; vertical-align: 1px; }
+.bg-tag { display: inline-block; margin-left: 6px; padding: 0 7px; border-radius: 999px; font-size: 10px; font-weight: 700;
+  line-height: 16px; vertical-align: 1px; text-transform: uppercase; letter-spacing: 0.03em; }
+.bg-tag-wait { background: color-mix(in srgb, var(--status-warning) 18%, transparent); color: var(--status-warning);
+  border: 1px solid color-mix(in srgb, var(--status-warning) 50%, transparent); }
+.bg-tag-stale { background: color-mix(in srgb, var(--muted-ink) 14%, transparent); color: var(--muted-ink);
+  border: 1px solid color-mix(in srgb, var(--muted-ink) 40%, transparent); text-transform: none; letter-spacing: 0; }
 .rec-stat-bg .rec-stat-num { color: var(--status-warning); }
 /* ---- Oct 5 2026 (Mark): empty comment rows are just the button */
 #roles-table tr.comment-row .ct-mount:empty { display: none; }
@@ -1317,61 +1296,111 @@ tr.util-org-row td { color: var(--text-secondary); padding-top: 4px; padding-bot
 </section>
 
 <section class="section4 recruiting-section">
-  <h2 class="sec-head">Recruiting Activity <span class="section4-range">every requisition on one line &middot; ATS export as of October 5, 2026</span></h2>
+  <h2 class="sec-head">Recruiting Activity <span class="section4-range">ATS export as of October 5, 2026</span></h2>
   <div class="rec-stats">
 <div class="rec-stat"><div class="rec-stat-num">11</div><div class="rec-stat-label">open requisitions</div></div><div class="rec-stat"><div class="rec-stat-num">53</div><div class="rec-stat-label">candidates interviewing</div></div><div class="rec-stat"><div class="rec-stat-num">3</div><div class="rec-stat-label">roles filled</div></div><div class="rec-stat rec-stat-bg"><div class="rec-stat-num">2</div><div class="rec-stat-label">waiting on background check</div></div><div class="rec-stat"><div class="rec-stat-num">55</div><div class="rec-stat-label">days open, oldest requisition</div></div>
   </div>
-  <div class="rec-filters" id="rec-filters"><button type="button" class="rec-chip rec-chip-on" data-stage="all">All <span>11</span></button><button type="button" class="rec-chip" data-stage="bg">Background check <span>2</span></button><button type="button" class="rec-chip" data-stage="filled">Filled / starting <span>1</span></button><button type="button" class="rec-chip" data-stage="offer">Offer / finalist <span>2</span></button><button type="button" class="rec-chip" data-stage="int">Interviewing <span>5</span></button><button type="button" class="rec-chip" data-stage="src">Sourcing <span>1</span></button><span class="rec-chip-sep"></span><button type="button" class="rec-chip rec-chip-on" data-geo="all">Everywhere</button><button type="button" class="rec-chip" data-geo="us">US <span>8</span></button><button type="button" class="rec-chip" data-geo="india">India <span>2</span></button><button type="button" class="rec-chip" data-geo="latam">LATAM <span>1</span></button></div>
-  <div class="rec-table-wrap"><table class="rec-table" id="rec-table">
-    <thead><tr><th>Requisition</th><th>Client</th><th>Stage</th><th class="num">Interviewing</th><th>Start</th><th class="num">Open</th><th>Recruiter</th><th>Latest update</th></tr></thead>
-    <tbody>
-      <tr data-stage="bg" data-geo="us" class="rec-row rec-row-bg"><td class="rec-req"><b>New Leaders - Full Stack AI Engineer - Contract</b><div class="rec-who">Sai</div></td><td>New Leaders</td><td><span class="rec-stg rec-stg-bg">Background check</span></td><td class="num">14</td><td>10/07</td><td class="num">32</td><td>Jill</td><td class="rec-upd">10/2: BG still pending. Everything but WA has checked. Manual processing which takes long. Estimated to be complete 10/5. Project work pushed out a week</td></tr>
-      <tr data-stage="bg" data-geo="india" class="rec-row rec-row-bg"><td class="rec-req"><b>DoorDash - Data Engineer - Contract</b><div class="rec-who">Korra</div></td><td>DoorDash</td><td><span class="rec-stg rec-stg-bg">Background check</span><div class="rec-sub">last mentioned 9/22</div></td><td class="num">2</td><td>10/19</td><td class="num">32</td><td>Nagendra</td><td class="rec-upd">9/22 - waiting on BG check</td></tr>
-      <tr data-stage="filled" data-geo="us" class="rec-row"><td class="rec-req"><b>DoorDash -  SQL Analyst (Sakshi hire)</b><div class="rec-who">Sakshi</div></td><td>DoorDash</td><td><span class="rec-stg rec-stg-filled">Filled / starting</span></td><td class="num">0</td><td>10/19</td><td class="num">3</td><td>Jill</td><td class="rec-upd">10/2: Client asked to bring Sakshi on as they terminated the contract with her vendor. Getting offer approved and sent over for a target 10/19 SD</td></tr>
-      <tr data-stage="offer" data-geo="us" class="rec-row"><td class="rec-req"><b>Data Management, Practice Director</b></td><td>Internal</td><td><span class="rec-stg rec-stg-offer">Offer / finalist</span></td><td class="num">6</td><td>11/16</td><td class="num">53</td><td>Jill</td><td class="rec-upd">10/2: moving forward with Payal. Final step to dine with MM, then possibly meet team</td></tr>
-      <tr data-stage="offer" data-geo="us" class="rec-row"><td class="rec-req"><b>Marketing Manager</b></td><td>Internal</td><td><span class="rec-stg rec-stg-offer">Offer / finalist</span></td><td class="num">3</td><td>10/07</td><td class="num">39</td><td>Jill</td><td class="rec-upd">10/2: plan to hire Julia on 3 month retainer. Jill to discuss and get contractor offer to her</td></tr>
-      <tr data-stage="int" data-geo="us" class="rec-row"><td class="rec-req"><b>AI Engineering, Practice Director</b></td><td>Internal</td><td><span class="rec-stg rec-stg-int">Interviewing</span></td><td class="num">18</td><td>11/09</td><td class="num">55</td><td>Jill</td><td class="rec-upd">10/2: Continue sourcing and screening. Another meeting MM on 10/5</td></tr>
-      <tr data-stage="int" data-geo="us" class="rec-row"><td class="rec-req"><b>Delivery Lead</b></td><td>Internal</td><td><span class="rec-stg rec-stg-int">Interviewing</span></td><td class="num">4</td><td>11/16</td><td class="num">32</td><td>Jill</td><td class="rec-upd">10/2: screening more candidates. Moving one to 2nd rounds. Meeting with interview team on 10/5</td></tr>
-      <tr data-stage="int" data-geo="latam" class="rec-row"><td class="rec-req"><b>DoorDash - Sr. SQL Analyst</b></td><td>DoorDash</td><td><span class="rec-stg rec-stg-int">Interviewing</span></td><td class="num">3</td><td>10/19</td><td class="num">13</td><td>Jill</td><td class="rec-upd">10/2: 3 interviews this week. moving 2 to team meeting Wed/Thursday</td></tr>
-      <tr data-stage="int" data-geo="us" class="rec-row"><td class="rec-req"><b>Solutions Architect (Floater)</b></td><td>Internal</td><td><span class="rec-stg rec-stg-int">Interviewing</span></td><td class="num">2</td><td>11/30</td><td class="num">35</td><td>Jill</td><td class="rec-upd">10/2: opened for pooling. Likely wont need esp if we hire BSC.</td></tr>
-      <tr data-stage="int" data-geo="india" class="rec-row"><td class="rec-req"><b>DoorDash - CTI  AI Engineer</b></td><td>DoorDash</td><td><span class="rec-stg rec-stg-int">Interviewing</span></td><td class="num">1</td><td>10/19</td><td class="num">6</td><td>Nagendra</td><td class="rec-upd">10/5: 1 candidate interviewing. have not gotten commit form client to backfill.</td></tr>
-      <tr data-stage="src" data-geo="us" class="rec-row"><td class="rec-req"><b>BSC Solutions Architect</b></td><td>BSC</td><td><span class="rec-stg rec-stg-src">Sourcing</span></td><td class="num">0</td><td>11/16</td><td class="num">6</td><td>Jill</td><td class="rec-upd">10/2: no update. starting to screen candidates next week.</td></tr>
-      <tr class="rec-empty" hidden><td colspan="8">No requisitions match these filters.</td></tr>
-    </tbody>
-  </table></div>
-  <div class="rec-lines">
-    <div class="rec-line"><b>Scheduled demand with no requisition (9)</b> Boston Scientific: US Sigma end user support &middot; Boston Scientific: US-Sigma platform admin/strategy &middot; Care Hospice Inc.: DV&amp;A Consultant &middot; Harvard Business Publishing: DV&amp;A-Alteryx/Tableau &middot; Industrial Physics, Inc.: Delivery Manager &middot; Industrial Physics, Inc.: PowerBI Developer &middot; Industrial Physics, Inc.: Solutions Architect &middot; Industrial Physics, Inc.: Sr. DE &middot; Industrial Physics, Inc.: Sr. Data Eng
-      <span class="rec-note-inline">Open demand in Salesforce with nothing open in the ATS &mdash; either
-      it is meant to be filled internally, or the requisition has not been raised yet.</span></div>
-    <div class="rec-line"><b>Requisitions closed (2)</b> BSC -Senior  Data Engineer &middot; LBPM -Senior  Data Engineer - Contract
-      <span class="rec-note-inline">Compared against the Sep 18 export: a requisition present then and absent now is listed as closed.</span></div>
+  <div class="rec-cols">
+    <div class="rec-col">
+      <h3 class="section4-subhead">Filled</h3>
+      <ul class="rec-list"><li><b>Sai</b> &mdash; New Leaders: Full Stack AI Engineer (contract)<div class="rec-item-sub">New Leaders - AI POD: Phase 1 &middot; background check nearly complete (one state pending); start slipped a week, project work pushed out with it</div></li><li><b>Korra</b> &mdash; DoorDash: CTI Sr Data Engineer (Snowflake/dbt)<div class="rec-item-sub">DoorDash - Data Engineering Resource 2 &middot; start pushed to Oct 16 by employer notice period; back-ups being met (Salesforce demand line now reads Ranga Naik)</div></li><li><b>Sakshi</b> &mdash; DoorDash: SQL Analyst (Critical River transition)<div class="rec-item-sub">Door Dash - RSL Critical River Resource Transition &middot; client asked to bring her on directly; offer being approved for an Oct 19 start</div></li></ul>
+    </div>
+    <div class="rec-col rec-col-bg">
+      <h3 class="section4-subhead">Waiting on background check <span class="count-chip">2</span></h3>
+      <ul class="rec-list" id="rec-bg-list"><li><b>Sai</b> &mdash; New Leaders - Full Stack AI Engineer - Contract <span class="bg-tag bg-tag-wait">waiting</span><div class="rec-item-sub">10/2: BG still pending. Everything but WA has checked. Manual processing which takes long. Estimated to be complete 10/5. Project work pushed out a week &middot; target start 10/07/2026 &middot; Jill Austin</div></li><li><b>Korra</b> &mdash; DoorDash - Data Engineer - Contract <span class="bg-tag bg-tag-stale">last mentioned 9/22</span><div class="rec-item-sub">9/22 - waiting on BG check &middot; target start 10/19/2026 &middot; Nagendra Ponna</div></li></ul>
+      <div class="rec-note">Read from the recruiter&#39;s status notes (the export has no stage column): the newest note that
+      mentions the check decides. &quot;Last mentioned&quot; means later notes are silent on it &mdash; confirm in the meeting.</div>
+    </div>
+    <div class="rec-col">
+      <h3 class="section4-subhead">Opened in the last two weeks</h3>
+      <ul class="rec-list"><li>DoorDash - Sr. SQL Analyst</li><li>DoorDash - CTI  AI Engineer</li><li>BSC Solutions Architect</li><li>DoorDash -  SQL Analyst (Sakshi hire)</li></ul>
+    </div>
+    <div class="rec-col">
+      <h3 class="section4-subhead">Scheduled demand with no requisition</h3>
+      <ul class="rec-list"><li>Boston Scientific: US Sigma end user support</li><li>Boston Scientific: US-Sigma platform admin/strategy</li><li>Care Hospice Inc.: DV&amp;A Consultant</li><li>Harvard Business Publishing: DV&amp;A-Alteryx/Tableau</li><li>Industrial Physics, Inc.: Delivery Manager</li><li>Industrial Physics, Inc.: PowerBI Developer</li><li>Industrial Physics, Inc.: Solutions Architect</li><li>Industrial Physics, Inc.: Sr. DE</li><li>Industrial Physics, Inc.: Sr. Data Eng</li></ul>
+      <div class="rec-note">Open demand in Salesforce with nothing open in the ATS &mdash; either
+      it is meant to be filled internally, or the requisition has not been raised yet.</div>
+    </div>
+    <div class="rec-col">
+      <h3 class="section4-subhead">Requisitions closed</h3>
+      <ul class="rec-list"><li>BSC -Senior  Data Engineer</li><li>LBPM -Senior  Data Engineer - Contract</li></ul>
+      <div class="rec-note">Compared against the Sep 18 export: a requisition present then and absent now is listed as closed.</div>
+    </div>
   </div>
-  <script>
-  (function () {
-    var box = document.getElementById("rec-filters"), tbl = document.getElementById("rec-table");
-    if (!box || !tbl) return;
-    var stage = "all", geo = "all";
-    function apply() {
-      var shown = 0;
-      Array.prototype.forEach.call(tbl.querySelectorAll("tr.rec-row"), function (tr) {
-        var ok = (stage === "all" || tr.dataset.stage === stage) && (geo === "all" || tr.dataset.geo === geo);
-        tr.hidden = !ok; if (ok) shown++;
-      });
-      var empty = tbl.querySelector("tr.rec-empty"); if (empty) empty.hidden = shown > 0;
-      Array.prototype.forEach.call(box.querySelectorAll(".rec-chip"), function (b) {
-        var on = b.dataset.stage ? b.dataset.stage === stage : b.dataset.geo === geo;
-        b.classList.toggle("rec-chip-on", on); b.setAttribute("aria-pressed", on ? "true" : "false");
-      });
+  <div class="rec-note rec-note-bottom">Interviewing counts are candidates currently in interviews per requisition. A requisition is listed as closed when it was in the previous export and is absent from this one. Compensation fields are never carried into this page.</div>
+
+<script>
+/* Recruiting Activity, live from Greenhouse (Mark, Oct 5 2026). The build writes this section from
+   the weekly export; when the app can reach Greenhouse, /api/recruiting answers with the same shape
+   and the tiles, the background-check list and the "opened in the last two weeks" list re-render. */
+(function () {
+  var sec = document.querySelector("section.recruiting-section");
+  if (!sec || typeof fetch !== "function") return;
+  var BG = /\b(bg|bgv|bgc|background)\b/i;
+  var PEND = /pending|still|waiting|in progress|not (?:yet )?clear|outstanding|awaiting|delay|manual processing/i;
+  var CLR = /\bclear(?:ed)?\b|\bpassed\b|came back|\bcompleted\b|\bdone\b|\bfinished\b/i;
+  function esc(t) { return String(t == null ? "" : t).replace(/[&<>"]/g, function (c) { return ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]; }); }
+  function noteDate(n) { var m = /^\s*(\d{1,2}[\/.]\d{1,2})/.exec(n || ""); return m ? m[1].replace(".", "/") : ""; }
+  function bgStatus(r) {
+    var hist = (r.history && r.history.length) ? r.history : (r.update ? [r.update] : []);
+    for (var i = 0; i < hist.length; i++) {
+      var n = hist[i]; if (!BG.test(n)) continue;
+      if (CLR.test(n) && !PEND.test(n)) return null;
+      return { state: i === 0 ? "waiting" : "stale", note: n, date: noteDate(n) };
     }
-    box.addEventListener("click", function (ev) {
-      var b = ev.target.closest(".rec-chip"); if (!b) return;
-      if (b.dataset.stage) stage = b.dataset.stage; else if (b.dataset.geo) geo = b.dataset.geo;
-      apply();
+    return null;
+  }
+  var filled = [];
+  Array.prototype.forEach.call(sec.querySelectorAll(".rec-col .rec-list li b"), function (b) {
+    var h = b.parentNode.parentNode.previousElementSibling;
+    if (h && /^Filled/.test(h.textContent)) filled.push(b.textContent.trim());
+  });
+  function who(r) {
+    var text = [r.job].concat(r.history || [r.update || ""]).join(" ");
+    for (var i = 0; i < filled.length; i++) {
+      var first = filled[i].split(" ")[0];
+      if (first.length >= 3 && new RegExp("\\b" + first.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b", "i").test(text)) return filled[i];
+    }
+    return "";
+  }
+  function setTile(label, n) {
+    Array.prototype.forEach.call(sec.querySelectorAll(".rec-stat"), function (t) {
+      var l = t.querySelector(".rec-stat-label"), v = t.querySelector(".rec-stat-num");
+      if (l && v && l.textContent.trim().indexOf(label) === 0) v.textContent = String(n);
     });
-    apply();
-  })();
-  </script>
-  <div class="rec-note rec-note-bottom">Stage is read from the recruiter&#39;s status notes (the export has no stage column): the newest note that mentions a background check decides that stage, and &quot;last mentioned&quot; means later notes are silent on it &mdash; confirm in the meeting. Interviewing counts are candidates currently in interviews per requisition. A requisition is listed as closed when it was in the previous export and is absent from this one. Compensation fields are never carried into this page.</div>
+  }
+  fetch("/api/recruiting", { credentials: "same-origin" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+    if (!j || !j.reqs || !j.reqs.length) return;
+    var reqs = j.reqs, items = [], nWait = 0, totalInt = 0, oldest = 0, now = Date.now();
+    var opened = [];
+    reqs.forEach(function (r) {
+      totalInt += r.interviewing || 0; oldest = Math.max(oldest, r.days_open || 0);
+      if (r.opened && (now - Date.parse(r.opened)) <= 14 * 86400000) opened.push(r.job);
+      var st = bgStatus(r); if (!st) return;
+      var w = who(r); if (st.state === "waiting") nWait++;
+      items.push("<li>" + (w ? "<b>" + esc(w) + "</b> &mdash; " : "") + esc(r.job) + " " +
+        (st.state === "waiting" ? '<span class="bg-tag bg-tag-wait">waiting</span>' : '<span class="bg-tag bg-tag-stale">last mentioned ' + esc(st.date) + "</span>") +
+        '<div class="rec-item-sub">' + esc(st.note) + (r.start ? " &middot; target start " + esc(r.start) : "") + (r.recruiter ? " &middot; " + esc(r.recruiter) : "") + "</div></li>");
+    });
+    var list = document.getElementById("rec-bg-list");
+    if (list) {
+      var ul = document.createElement(items.length ? "ul" : "div");
+      ul.id = "rec-bg-list"; ul.className = items.length ? "rec-list" : "rec-note";
+      ul.innerHTML = items.length ? items.join("") : "No requisition is waiting on a background check in Greenhouse.";
+      list.parentNode.replaceChild(ul, list);
+      var chip = sec.querySelector(".rec-col-bg .count-chip"); if (chip) chip.textContent = String(items.length);
+    }
+    Array.prototype.forEach.call(sec.querySelectorAll(".rec-col"), function (c) {
+      var h = c.querySelector(".section4-subhead"), u = c.querySelector(".rec-list");
+      if (h && u && /^Opened in the last two weeks/.test(h.textContent)) u.innerHTML = opened.length ? opened.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") : "<li>none</li>";
+    });
+    setTile("open requisitions", reqs.length); setTile("candidates interviewing", totalInt);
+    setTile("waiting on background check", items.length); setTile("days open", oldest);
+    var range = sec.querySelector(".sec-head .section4-range");
+    if (range) range.innerHTML = "live from Greenhouse &middot; as of " + esc((j.cachedAt || j.asOf || "").slice(0, 16).replace("T", " ")) + " UTC";
+  }).catch(function () {});
+})();
+</script>
 </section>
 
 

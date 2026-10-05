@@ -87,6 +87,14 @@ schemaless JSON keyed by collection + id; every write is journaled in `doc_log` 
   (`PATCH /api/db/allocations/:id {status:"entered"}`) takes the same path. Nothing is written to
   Snowflake directly - it follows NetSuite on the next sync and build.
 
+- Greenhouse: `GET /api/recruiting` (`lib/greenhouse.ts`, Harvest API, `GREENHOUSE_API_KEY`) returns the open
+  requisitions in the dashboard's ATS JSON shape - jobs whose name starts with "Internal" are left out
+  (`GH_EXCLUDE_JOBS`), compensation fields are never read and notes are scrubbed of pay language. The
+  Recruiting Activity section re-renders its tiles, the "Waiting on background check" list and
+  "Opened in the last two weeks" from it on page load; the Monday build can pull it with the
+  `IMPORT_TOKEN` bearer instead of the weekly xlsx. `?discover=1` (admins) lists the account's job
+  custom-field keys and stage names for the `GH_FIELD_*` mapping.
+
 ## Roadmap
 
 1. Port the existing dashboard sections onto live data (this phase).
