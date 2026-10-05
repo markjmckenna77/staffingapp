@@ -883,6 +883,15 @@ tr.util-org-row td { color: var(--text-secondary); padding-top: 4px; padding-bot
 .bg-tag-stale { background: color-mix(in srgb, var(--muted-ink) 14%, transparent); color: var(--muted-ink);
   border: 1px solid color-mix(in srgb, var(--muted-ink) 40%, transparent); text-transform: none; letter-spacing: 0; }
 .rec-stat-bg .rec-stat-num { color: var(--status-warning); }
+.rec-table-wrap { overflow-x: auto; margin-top: 14px; }
+.rec-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+.rec-table th { text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted-ink);
+  padding: 6px 8px; border-bottom: 1px solid var(--gridline); white-space: nowrap; }
+.rec-table td { padding: 6px 8px; border-bottom: 1px solid var(--gridline); vertical-align: top; color: var(--text-primary); }
+.rec-table .rec-why { color: var(--muted-ink); }
+.rec-kind { font-weight: 700; white-space: nowrap; }
+.rec-kind-noreq { color: var(--status-warning); }
+.rec-kind-closed { color: var(--muted-ink); }
 /* ---- Oct 5 2026 (Mark): empty comment rows are just the button */
 #roles-table tr.comment-row .ct-mount:empty { display: none; }
 #roles-table tr.comment-row .ct-open { margin-top: 0; }
@@ -890,6 +899,16 @@ tr.util-org-row td { color: var(--text-secondary); padding-top: 4px; padding-bot
 .ct-drawer.ct-alloc-only .ct-dr-foot textarea, .ct-drawer.ct-alloc-only .ct-dr-foot .ct-compose-row, .ct-drawer.ct-alloc-only .ct-dr-tools .mlog-select,
 .ct-drawer.ct-alloc-only .ct-dr-tools .ct-ghost:not(:last-child), .ct-drawer.ct-alloc-only .mlog-empty { display: none !important; }
 .ct-drawer.ct-alloc-only .ct-dr-body { padding-bottom: 16px; }
+/* ---- Oct 5 2026 (Mark): click a section heading to collapse / expand it */
+h2.sec-head.sec-toggle { cursor: pointer; user-select: none; }
+h2.sec-head.sec-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.sec-caret { display: inline-block; width: 0; height: 0; margin-right: 9px; vertical-align: 2px;
+  border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-left: 6px solid currentColor;
+  transform: rotate(90deg); transition: transform 0.12s ease; opacity: 0.75; }
+.sec-collapsed > h2.sec-head .sec-caret { transform: rotate(0deg); }
+.sec-collapsed > :not(h2.sec-head) { display: none !important; }
+.sec-collapsed > h2.sec-head { margin-bottom: -18px !important; border-radius: 9px !important; }
+.agenda-panel.sec-collapsed > h2.sec-head { margin-bottom: -14px !important; }
 </style>
 
 <div class="viz-root">
@@ -1293,18 +1312,24 @@ tr.util-org-row td { color: var(--text-secondary); padding-top: 4px; padding-bot
       <h3 class="section4-subhead">Opened in the last two weeks</h3>
       <ul class="rec-list"><li>DoorDash - Sr. SQL Analyst</li><li>DoorDash - CTI  AI Engineer</li><li>BSC Solutions Architect</li><li>DoorDash -  SQL Analyst (Sakshi hire)</li></ul>
     </div>
-    <div class="rec-col">
-      <h3 class="section4-subhead">Scheduled demand with no requisition</h3>
-      <ul class="rec-list"><li>Boston Scientific: US Sigma end user support</li><li>Boston Scientific: US-Sigma platform admin/strategy</li><li>Care Hospice Inc.: DV&amp;A Consultant</li><li>Harvard Business Publishing: DV&amp;A-Alteryx/Tableau</li><li>Industrial Physics, Inc.: Delivery Manager</li><li>Industrial Physics, Inc.: PowerBI Developer</li><li>Industrial Physics, Inc.: Solutions Architect</li><li>Industrial Physics, Inc.: Sr. DE</li><li>Industrial Physics, Inc.: Sr. Data Eng</li></ul>
-      <div class="rec-note">Open demand in Salesforce with nothing open in the ATS &mdash; either
-      it is meant to be filled internally, or the requisition has not been raised yet.</div>
-    </div>
-    <div class="rec-col">
-      <h3 class="section4-subhead">Requisitions closed</h3>
-      <ul class="rec-list"><li>BSC -Senior  Data Engineer</li><li>LBPM -Senior  Data Engineer - Contract</li></ul>
-      <div class="rec-note">Compared against the Sep 18 export: a requisition present then and absent now is listed as closed.</div>
-    </div>
   </div>
+    <div class="rec-table-wrap"><table class="rec-table rec-gaps-table">
+    <thead><tr><th>Status</th><th>Client</th><th>Role / requisition</th><th>Why it is listed</th></tr></thead>
+    <tbody>
+      <tr class="rec-row-noreq"><td><span class="rec-kind rec-kind-noreq">No requisition</span></td><td>Boston Scientific</td><td>US Sigma end user support</td><td class="rec-why">scheduled demand in Salesforce, nothing open in the ATS</td></tr>
+      <tr class="rec-row-noreq"><td><span class="rec-kind rec-kind-noreq">No requisition</span></td><td>Boston Scientific</td><td>US-Sigma platform admin/strategy</td><td class="rec-why">scheduled demand in Salesforce, nothing open in the ATS</td></tr>
+      <tr class="rec-row-noreq"><td><span class="rec-kind rec-kind-noreq">No requisition</span></td><td>Care Hospice Inc.</td><td>DV&amp;A Consultant</td><td class="rec-why">scheduled demand in Salesforce, nothing open in the ATS</td></tr>
+      <tr class="rec-row-noreq"><td><span class="rec-kind rec-kind-noreq">No requisition</span></td><td>Harvard Business Publishing</td><td>DV&amp;A-Alteryx/Tableau</td><td class="rec-why">scheduled demand in Salesforce, nothing open in the ATS</td></tr>
+      <tr class="rec-row-noreq"><td><span class="rec-kind rec-kind-noreq">No requisition</span></td><td>Industrial Physics, Inc.</td><td>Delivery Manager</td><td class="rec-why">scheduled demand in Salesforce, nothing open in the ATS</td></tr>
+      <tr class="rec-row-noreq"><td><span class="rec-kind rec-kind-noreq">No requisition</span></td><td>Industrial Physics, Inc.</td><td>PowerBI Developer</td><td class="rec-why">scheduled demand in Salesforce, nothing open in the ATS</td></tr>
+      <tr class="rec-row-noreq"><td><span class="rec-kind rec-kind-noreq">No requisition</span></td><td>Industrial Physics, Inc.</td><td>Solutions Architect</td><td class="rec-why">scheduled demand in Salesforce, nothing open in the ATS</td></tr>
+      <tr class="rec-row-noreq"><td><span class="rec-kind rec-kind-noreq">No requisition</span></td><td>Industrial Physics, Inc.</td><td>Sr. DE</td><td class="rec-why">scheduled demand in Salesforce, nothing open in the ATS</td></tr>
+      <tr class="rec-row-noreq"><td><span class="rec-kind rec-kind-noreq">No requisition</span></td><td>Industrial Physics, Inc.</td><td>Sr. Data Eng</td><td class="rec-why">scheduled demand in Salesforce, nothing open in the ATS</td></tr>
+      <tr class="rec-row-closed"><td><span class="rec-kind rec-kind-closed">Closed</span></td><td></td><td>BSC -Senior  Data Engineer</td><td class="rec-why">in the previous export, absent from this one</td></tr>
+      <tr class="rec-row-closed"><td><span class="rec-kind rec-kind-closed">Closed</span></td><td></td><td>LBPM -Senior  Data Engineer - Contract</td><td class="rec-why">in the previous export, absent from this one</td></tr>
+    </tbody>
+  </table></div>
+  <div class="rec-note">Open demand in Salesforce with nothing open in the ATS &mdash; either it is meant to be filled internally, or the requisition has not been raised yet. Compared against the Sep 18 export: a requisition present then and absent now is listed as closed.</div>
   <div class="rec-note rec-note-bottom">Interviewing counts are candidates currently in interviews per requisition. A requisition is listed as closed when it was in the previous export and is absent from this one. Compensation fields are never carried into this page.</div>
 
 <script>
@@ -2061,6 +2086,45 @@ tr.util-org-row td { color: var(--text-secondary); padding-top: 4px; padding-bot
     var open = btn.getAttribute("aria-pressed") !== "true";
     table.querySelectorAll("tr.util-prac-row").forEach(function (r) { setOpen(r, open); });
     syncBtn();
+  });
+})();
+</script>
+
+
+<script>
+/* Collapsible sections (Mark, Oct 5 2026). A heading click folds its section; the heading's own
+   buttons (comments) are left alone. Remembered per browser under "ct-sec-collapsed". */
+(function () {
+  var KEY = "ct-sec-collapsed";
+  function load() { try { return JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { return {}; } }
+  function save(st) { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) {} }
+  function idOf(h) {
+    var t = "";
+    Array.prototype.forEach.call(h.childNodes, function (n) { if (n.nodeType === 3) t += n.textContent; });
+    return t.replace(/\s+/g, " ").trim().toLowerCase();
+  }
+  var state = load();
+  Array.prototype.forEach.call(document.querySelectorAll("h2.sec-head"), function (h) {
+    var box = h.parentNode; if (!box) return;
+    var id = idOf(h); if (!id) return;
+    h.classList.add("sec-toggle");
+    h.setAttribute("role", "button"); h.setAttribute("tabindex", "0");
+    var caret = document.createElement("span"); caret.className = "sec-caret"; caret.setAttribute("aria-hidden", "true");
+    h.insertBefore(caret, h.firstChild);
+    function set(collapsed, persist) {
+      box.classList.toggle("sec-collapsed", collapsed);
+      h.setAttribute("aria-expanded", collapsed ? "false" : "true");
+      if (persist) { if (collapsed) state[id] = 1; else delete state[id]; save(state); }
+    }
+    set(!!state[id], false);
+    h.addEventListener("click", function (ev) {
+      if (ev.target && ev.target.closest && ev.target.closest("button, a, input, select, textarea")) return;
+      set(!box.classList.contains("sec-collapsed"), true);
+    });
+    h.addEventListener("keydown", function (ev) {
+      if (ev.target !== h) return;
+      if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); set(!box.classList.contains("sec-collapsed"), true); }
+    });
   });
 })();
 </script>

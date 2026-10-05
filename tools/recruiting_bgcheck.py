@@ -126,6 +126,45 @@ CSS = """
 </style>"""
 s = s.replace("\n</style>", CSS, 1)
 
+# ---- no-requisition demand and closed requisitions: a small table under the columns (Mark, Oct 5 2026)
+def take_col(title):
+    global s
+    m = re.search(r'\s*<div class="rec-col">\s*<h3 class="section4-subhead">' + re.escape(title) + r'</h3>\s*(?:<ul class="rec-list">(.*?)</ul>)?\s*(?:<div class="rec-note">(.*?)</div>)?\s*</div>', s, re.S)
+    if not m:
+        return [], ""
+    s = s[:m.start()] + s[m.end():]
+    return re.findall(r"<li>(.*?)</li>", m.group(1) or ""), re.sub(r"\s+", " ", m.group(2) or "").strip()
+noreq, noreq_note = take_col("Scheduled demand with no requisition")
+closed, closed_note = take_col("Requisitions closed")
+if noreq or closed:
+    rows = []
+    for x in noreq:
+        client, _, role = x.partition(": ")
+        rows.append('<tr class="rec-row-noreq"><td><span class="rec-kind rec-kind-noreq">No requisition</span></td><td>'
+                    + (client if role else "") + "</td><td>" + (role or client)
+                    + '</td><td class="rec-why">scheduled demand in Salesforce, nothing open in the ATS</td></tr>')
+    for x in closed:
+        rows.append('<tr class="rec-row-closed"><td><span class="rec-kind rec-kind-closed">Closed</span></td><td></td><td>' + x
+                    + '</td><td class="rec-why">in the previous export, absent from this one</td></tr>')
+    gaps = ('  <div class="rec-table-wrap"><table class="rec-table rec-gaps-table">\n'
+            '    <thead><tr><th>Status</th><th>Client</th><th>Role / requisition</th><th>Why it is listed</th></tr></thead>\n'
+            '    <tbody>\n' + "\n".join("      " + r for r in rows) + '\n    </tbody>\n  </table></div>\n'
+            '  <div class="rec-note">' + noreq_note + " " + closed_note + '</div>\n')
+    j = s.index('<div class="rec-note rec-note-bottom">', s.index('<section class="section4 recruiting-section">'))
+    s = s[:j] + gaps + "  " + s[j:]
+    CSS_T = """
+.rec-table-wrap { overflow-x: auto; margin-top: 14px; }
+.rec-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+.rec-table th { text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted-ink);
+  padding: 6px 8px; border-bottom: 1px solid var(--gridline); white-space: nowrap; }
+.rec-table td { padding: 6px 8px; border-bottom: 1px solid var(--gridline); vertical-align: top; color: var(--text-primary); }
+.rec-table .rec-why { color: var(--muted-ink); }
+.rec-kind { font-weight: 700; white-space: nowrap; }
+.rec-kind-noreq { color: var(--status-warning); }
+.rec-kind-closed { color: var(--muted-ink); }
+</style>"""
+    s = s.replace("\n</style>", CSS_T, 1)
+
 # ---- live refresh from Greenhouse (GET /api/recruiting; silently keeps the export data when absent)
 LIVE_JS = """
 <script>
