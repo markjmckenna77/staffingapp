@@ -12,7 +12,7 @@ the fragment; AGENDA_CSS goes in the stylesheet.
 """
 
 AGENDA_HTML = """<section class="agenda-panel">
-  <h2 class="sec-head">Meeting Agenda <span class="agenda-sub">shared &mdash; everyone who opens this page sees the same list, and it survives the weekly refresh</span></h2>
+  <h2 class="sec-head">Meeting Agenda</h2>
   <div id="agenda-status" class="agenda-note">Loading the shared agenda&hellip;</div>
   <ol id="agenda-items" class="agenda-items" hidden></ol>
   <div id="agenda-form" class="agenda-form" hidden>

@@ -76,9 +76,16 @@ schemaless JSON keyed by collection + id; every write is journaled in `doc_log` 
   `POST /api/meeting-log/import` (bearer `IMPORT_TOKEN`). Summary and decisions become comments
   on the "Meeting notes (Granola)" thread; action items become action items; the raw payload
   is kept in `meetings/<week>`.
-- Certinia: marking an allocation entered (`PATCH /api/db/allocations/:id {status:"entered"}`)
-  writes the assignment to Salesforce first via `lib/certinia.ts` when `SF_*` is configured
-  (dry run until `SF_ENTER_ENABLED=true`); only approvers (`APPROVER_EMAILS`/`ADMIN_EMAILS`) can.
+- NetSuite: NetSuite's Resource Allocations are the system of record for staffing (an open role is an
+  allocation on a generic resource such as `_Data Mgmt`); Fivetran copies them to Snowflake
+  (`RAW_NETSUITE.RESOURCEALLOCATION`) and dbt rebuilds the `CONS_*` tables the dashboard reads. The
+  Open Roles section's **Allocate** buttons call `POST /api/allocate`, which records the allocation
+  and, when `NS_*` is configured, creates the employee's Resource Allocation in NetSuite via
+  `lib/netsuite.ts` (Hard, percent of a 40-hour week, Monday of the first week through Friday of the
+  last) and ends or zeroes the generic allocation it fills. Dry run until `NS_WRITE_ENABLED=true`;
+  approvers only (`APPROVER_EMAILS`/`ADMIN_EMAILS`). Marking a proposal entered in the Meeting Log
+  (`PATCH /api/db/allocations/:id {status:"entered"}`) takes the same path. Nothing is written to
+  Snowflake directly - it follows NetSuite on the next sync and build.
 
 ## Roadmap
 
