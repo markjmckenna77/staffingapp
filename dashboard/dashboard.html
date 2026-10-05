@@ -1907,10 +1907,6 @@ tr.util-org-row td { color: var(--text-secondary); padding-top: 4px; padding-bot
 
 <section class="section4 util-section" id="util-section">
   <h2 class="sec-head">Utilization by Practice <span class="section4-range">Jan&ndash;Oct 2026 YTD &middot; 6 practices &middot; 91 consultants &middot; employees</span></h2>
-  <div class="outlook-controls">
-    <button type="button" class="outlook-btn" id="util-expand-all" aria-pressed="false">Expand all practices</button>
-    <span class="s3-tabs-note">click a practice to see utilization by consultant &middot; monthly value is billable hours over the utilization denominator &middot; <b>Oct</b> includes scheduled weeks through month end</span>
-  </div>
   <div class="util-scroll">
   <table class="outlook-table util-table" id="util-table">
     <thead><tr><th class="util-col-name">Practice / consultant</th><th class="wk">Jan</th><th class="wk">Feb</th><th class="wk">Mar</th><th class="wk">Apr</th><th class="wk">May</th><th class="wk">Jun</th><th class="wk">Jul</th><th class="wk">Aug</th><th class="wk">Sep</th><th class="wk">Oct <span class="util-cur-tag">(scheduled)</span></th><th class="wk util-ytd-h">YTD</th><th class="util-col-target">Target</th></tr></thead>
@@ -2042,6 +2038,7 @@ tr.util-org-row td { color: var(--text-secondary); padding-top: 4px; padding-bot
   function syncBtn() {
     var rows = table.querySelectorAll("tr.util-prac-row");
     var allOpen = Array.prototype.every.call(rows, function (r) { return r.classList.contains("pj-open"); });
+    if (!btn) return;
     btn.textContent = allOpen ? "Collapse all practices" : "Expand all practices";
     btn.setAttribute("aria-pressed", allOpen ? "true" : "false");
     btn.classList.toggle("outlook-btn-active", allOpen);
@@ -2055,7 +2052,7 @@ tr.util-org-row td { color: var(--text-secondary); padding-top: 4px; padding-bot
       if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); setOpen(row, !row.classList.contains("pj-open")); syncBtn(); }
     });
   });
-  btn.addEventListener("click", function () {
+  if (btn) btn.addEventListener("click", function () {
     var open = btn.getAttribute("aria-pressed") !== "true";
     table.querySelectorAll("tr.util-prac-row").forEach(function (r) { setOpen(r, open); });
     syncBtn();
