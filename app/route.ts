@@ -10,6 +10,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { auth } from "@/auth";
+import { getPage } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
@@ -34,11 +35,16 @@ export async function GET() {
   const email = session?.user?.email ?? "";
   const name = session?.user?.name ?? "";
 
-  let html: string;
-  try {
-    html = await readFile(DASHBOARD, "utf-8");
-  } catch {
-    return new Response("dashboard/dashboard.html is missing from this deployment.", { status: 500 });
+  // The Monday refresh uploads the built page to /api/dashboard (stored in Postgres); the file
+  // committed with the deployment is the fallback for a fresh database.
+  let html: string | null = null;
+  try { html = (await getPage("dashboard"))?.html ?? null; } catch { html = null; }
+  if (html === null) {
+    try {
+      html = await readFile(DASHBOARD, "utf-8");
+    } catch {
+      return new Response("No dashboard has been uploaded and dashboard/dashboard.html is missing from this deployment.", { status: 500 });
+    }
   }
 
   // Session bar: fixed, self-contained styles (sa- prefix) so nothing collides with the dashboard CSS.

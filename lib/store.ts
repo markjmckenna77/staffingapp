@@ -155,3 +155,47 @@ export function errorCode(e: unknown): string {
   const c = (e as { code?: string })?.code;
   return typeof c === "string" ? c : "error";
 }
+
+// ------------------------------------------------------------------ published pages
+// The weekly dashboard HTML itself (Oct 5 2026): the Monday refresh posts the built page to
+// /api/dashboard and GET / serves it, so a refresh no longer needs a git commit.
+export type PageMeta = { key: string; updated: number; updatedBy: string; note: string; bytes: number };
+
+async function ensurePages(): Promise<void> {
+  await ensureSchema();
+  await getPool().query(`
+    CREATE TABLE IF NOT EXISTS pages (
+      key text PRIMARY KEY,
+      html text NOT NULL,
+      updated bigint NOT NULL,
+      updated_by text NOT NULL DEFAULT '',
+      note text NOT NULL DEFAULT ''
+    );`);
+}
+
+export async function getPage(key: string): Promise<{ html: string; meta: PageMeta } | null> {
+  await ensurePages();
+  const r = await getPool().query("SELECT html, updated, updated_by, note FROM pages WHERE key=$1", [key]);
+  if (!r.rows.length) return null;
+  const row = r.rows[0];
+  return { html: row.html, meta: { key, updated: Number(row.updated), updatedBy: row.updated_by, note: row.note, bytes: row.html.length } };
+}
+
+export async function getPageMeta(key: string): Promise<PageMeta | null> {
+  await ensurePages();
+  const r = await getPool().query("SELECT updated, updated_by, note, length(html) AS bytes FROM pages WHERE key=$1", [key]);
+  if (!r.rows.length) return null;
+  const row = r.rows[0];
+  return { key, updated: Number(row.updated), updatedBy: row.updated_by, note: row.note, bytes: Number(row.bytes) };
+}
+
+export async function putPage(key: string, html: string, actor: string, note: string): Promise<PageMeta> {
+  await ensurePages();
+  const now = Date.now();
+  await getPool().query(
+    `INSERT INTO pages (key, html, updated, updated_by, note) VALUES ($1,$2,$3,$4,$5)
+     ON CONFLICT (key) DO UPDATE SET html=EXCLUDED.html, updated=EXCLUDED.updated, updated_by=EXCLUDED.updated_by, note=EXCLUDED.note`,
+    [key, html, now, actor, note]);
+  await journal(actor, "page", "pages", key, { note, bytes: html.length });
+  return { key, updated: now, updatedBy: actor, note, bytes: html.length };
+}
