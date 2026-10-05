@@ -86,6 +86,14 @@ window.__saUser=${JSON.stringify({ email, name })};
 </script>
 <script src="/sa-shim.js"></script>`;
 
+  // The pipeline emits the page as a fragment (<title>, <style>, sections) because the old
+  // claude.ai artifact host added the document skeleton. Give it one here when it is missing.
+  if (!/<body[\s>]/i.test(html)) {
+    const t = /^\s*<title>[\s\S]*?<\/title>/i.exec(html);
+    const title = t ? t[0].trim() : "<title>Cleartelligence Staffing Dashboard</title>";
+    const rest = t ? html.slice(t[0].length) : html;
+    html = `<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n${title}\n</head>\n<body>\n${rest}\n</body>\n</html>\n`;
+  }
   let out = html.replace(/<body([^>]*)>/i, (m) => m + bar);
   for (const note of OFFLINE_NOTES) out = out.split(note).join(STORE_DOWN);
 
