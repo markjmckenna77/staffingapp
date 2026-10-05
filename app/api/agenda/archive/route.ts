@@ -30,7 +30,7 @@ export async function POST(req: Request) {
       : `archived by the ${new Date().toISOString().slice(0, 10)} refresh`;
     const agenda = await listDocs("agenda");
     const items = agenda.map((d) => d.body as Record<string, unknown>)
-      .map((b) => ({ text: String(b.text ?? ""), done: !!b.done, order: Number(b.order ?? 0), ts: Number(b.ts ?? 0) }))
+      .map((b) => ({ text: String(b.text ?? ""), notes: String(b.notes ?? ""), done: !!b.done, order: Number(b.order ?? 0), ts: Number(b.ts ?? 0) }))
       .sort((a, b) => a.order - b.order);
     await setDoc("agenda_archive", week, { week, archivedTs: Date.now(), source, items }, by);
     let cleared = 0;

@@ -97,9 +97,13 @@ s = s[:tb0] + "\n" + "\n".join(x.rstrip("\n") for x in out) + "\n" + s[tb1:]
 
 # ---- controls: no expand-all, new note
 s = re.sub(r'\s*<button type="button" class="outlook-btn" id="outlook-expand-roles"[^>]*>[^<]*</button>', "", s, count=1)
-s = re.sub(r'(<section class="section4 roles-section" id="open-roles">.*?<span class="s3-tabs-note">)[^<]*(</span>)',
-           lambda m: m.group(1) + "each role shows its recruiting update; click <b>Staffing suggestions &amp; comments</b> under a role to open them" + m.group(2),
-           s, count=1, flags=re.S)
+# Mark, Oct 5 2026: no note line and no geography filter in Open Roles & Recruiting
+i0 = s.index('<section class="section4 roles-section" id="open-roles">'); i1 = s.index("</section>", i0)
+sec = s[i0:i1]
+sec = re.sub(r'\s*<span class="s3-tabs-note">.*?</span>', "", sec, count=1, flags=re.S)
+sec = re.sub(r'\s*<div class="geo-bar">.*?</div>\n', "\n", sec, count=1, flags=re.S)
+s = s[:i0] + sec + s[i1:]
+assert 'class="geo-bar"' not in s[i0:s.index("</section>", i0)]
 assert 'id="outlook-expand-roles"' not in s
 
 # ---- toggle script: replace the band-era one (it keyed off tr.role-row and the expand-all button)
@@ -131,6 +135,7 @@ CSS = """
 #roles-table tr.role-update td { padding: 0 8px 4px 22px !important; border-bottom: none; }
 #roles-table tr.role-update .demand-update { margin: 0; }
 #roles-table .demand-update-none { color: var(--muted-ink); font-style: italic; }
+#roles-table .demand-skills { margin-top: 3px; padding-top: 3px; border-top: 1px dashed color-mix(in srgb, var(--status-warning) 45%, transparent); }
 #roles-table tr.role-more td { padding: 0 8px 8px 22px !important; border-bottom: 1px solid var(--gridline); }
 #roles-table tr.role-more button.role-toggle { display: inline-flex; align-items: center; gap: 6px; width: auto;
   font-size: 11.5px; font-weight: 600; color: var(--accent); }

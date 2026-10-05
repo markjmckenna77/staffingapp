@@ -93,10 +93,8 @@ fits_legend = pre[legend_i] if legend_i is not None else ""
 pre = [l for i, l in enumerate(pre) if i not in (geo_i, legend_i)]
 btn_i = next(i for i, l in enumerate(pre) if 'id="outlook-expand-roles"' in l)
 expand_btn = pre.pop(btn_i).strip()
-pre = [l.replace("open roles sit at the bottom of their practice &middot; click a role for the recruiting update, "
-                 "suggestions and comments &middot; <b>+n more</b> opens a single week cell",
-                 "every project a consultant is booked to that week &middot; <b>+n more</b> opens a single week cell "
-                 "&middot; hover a line for the full project name") for l in pre]
+# Mark, Oct 5 2026: no explanatory note line under the Outlook controls
+pre = [re.sub(r'<span class="s3-tabs-note">.*?</span>', "", l) if "s3-tabs-note" in l else l for l in pre]
 pre = [l for l in pre if l.strip() or True]
 assert 'outlook-expand-roles' not in "\n".join(pre)
 
