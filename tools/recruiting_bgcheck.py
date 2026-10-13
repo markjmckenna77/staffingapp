@@ -44,10 +44,18 @@ def note_date(note):
     return m.group(1).replace(".", "/") if m else ""
 
 
+WITHDRAWN = re.compile(r"\b(is out|withdrew|withdrawn|declined|could not commit|backed out|backs out|rejected|"
+                 r"not moving forward|fell through|no longer available|dropped out|passed on)\b", re.I)
+
+
 def bg_status(r):
-    """-> (state, note, date) with state in {"waiting", "stale", "cleared", None}."""
+    """-> (state, note, date) with state in {"waiting", "stale", "cleared", None}.
+    A newer note saying the candidate is out (withdrew, declined, could not commit) ends the
+    background-check state - the check belonged to someone who is no longer coming."""
     hist = r.get("history") or ([r["update"]] if r.get("update") else [])
     for i, note in enumerate(hist):              # newest first
+        if WITHDRAWN.search(note):
+            return None, "", ""
         if not BG.search(note):
             continue
         pend, clr = PENDING.search(note), CLEARED.search(note)
@@ -181,8 +189,9 @@ LIVE_JS = """
   function noteDate(n) { var m = /^\\s*(\\d{1,2}[\\/.]\\d{1,2})/.exec(n || ""); return m ? m[1].replace(".", "/") : ""; }
   function bgStatus(r) {
     var hist = (r.history && r.history.length) ? r.history : (r.update ? [r.update] : []);
+    var OUT = /\\b(is out|withdrew|withdrawn|declined|could not commit|backed out|backs out|rejected|not moving forward|fell through|no longer available|dropped out|passed on)\\b/i;
     for (var i = 0; i < hist.length; i++) {
-      var n = hist[i]; if (!BG.test(n)) continue;
+      var n = hist[i]; if (OUT.test(n)) return null; if (!BG.test(n)) continue;
       if (CLR.test(n) && !PEND.test(n)) return null;
       return { state: i === 0 ? "waiting" : "stale", note: n, date: noteDate(n) };
     }
