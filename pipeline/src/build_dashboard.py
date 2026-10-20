@@ -625,7 +625,7 @@ def build():
     ADJ_BANNER = adjustment_banner()
     body = f"""<div class="viz-root">
   <div class="dash-title">{TITLE}</div>
-  <div class="dash-subtitle">Generated {D.GENERATED} &middot; consultant data as of week of {D.THIS_WEEK}</div>
+  <div class="dash-subtitle">Consultant data as of week of {D.THIS_WEEK}</div>
 {ADJ_BANNER}
 
 {AGENDA.AGENDA_HTML}
