@@ -34,7 +34,13 @@ function getConnection(): Promise<snowflake.Connection> {
       if (err) {
         connectionPromise = null;
         reject(err);
-      } else resolve(c);
+      } else {
+        // Cap every statement (Ask runs model-written SQL); best effort - resolve either way.
+        c.execute({
+          sqlText: "alter session set STATEMENT_TIMEOUT_IN_SECONDS = 45",
+          complete: () => resolve(c),
+        });
+      }
     });
   });
   return connectionPromise;

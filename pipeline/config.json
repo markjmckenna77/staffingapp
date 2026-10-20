@@ -1,0 +1,73 @@
+{
+  "_readme": "Week-to-week choices for the Monday build. Edit on GitHub (pencil icon) and commit; the next run picks it up. See pipeline/README.md.",
+  "match": {
+    "_readme": "Greenhouse job name -> [client, ROLE_TITLE] of the Salesforce/NetSuite demand line it staffs. The Monday summary lists client requisitions that match nothing.",
+    "DoorDash - Data Engineer - Contract": [
+      "DoorDash, Inc.",
+      "CTI Sr Data Engineer Snowflake/dbt"
+    ],
+    "DoorDash - Sr. SQL Analyst - Contract": [
+      "DoorDash, Inc.",
+      "Marcus backfill-Sr. Analyst SQL"
+    ],
+    "DoorDash - CTI  AI Engineer - Contract": [
+      "DoorDash, Inc.",
+      "Nikita backfill-CTI Sr AI Engineer"
+    ],
+    "BSC Solutions Architect": [
+      "Boston Scientific",
+      "US Solutions Architect"
+    ],
+    "Octapharma - Data Engineer - Contractor": [
+      "Octapharma USA, Inc.",
+      "Data Engineer - Fabric / Power BI"
+    ]
+  },
+  "manual_demand": [
+    {
+      "_readme": "Mark, Oct 13 2026. Not yet an allocation on a generic resource in NetSuite. Dropped automatically once Octapharma has a matching role in CONS_OPEN_DEMAND.",
+      "client": "Octapharma USA, Inc.",
+      "project": "Octapharma - Data Engineer (Fabric / Power BI) - new open role",
+      "role": "Data Engineer - Fabric / Power BI",
+      "hrs_per_day": 8,
+      "start": "2026-10-19",
+      "pm": "Eric Schmid",
+      "geo": "us",
+      "stage": "New open role (added manually Oct 13; not yet in NetSuite)",
+      "drop_when_role_matches": "Fabric|Power BI|Data Eng"
+    }
+  ],
+  "hide_roles": [
+    {
+      "_readme": "Hidden from Open Roles & Recruiting and Recruiting Activity (roles starting 'Internal:' are always hidden). Optional 'until': YYYY-MM-DD.",
+      "pattern": "Sakshi",
+      "note": "Mark, Oct 13 2026: filled, but Salesforce still schedules the line"
+    }
+  ],
+  "filled": [
+    {
+      "week": "2026-10-12",
+      "hire": "Sai",
+      "client": "New Leaders",
+      "role": "Full Stack AI Engineer (contract)",
+      "project": "New Leaders - AI POD: Phase 1",
+      "status": "requisition closed this week; the background check was the last step as of Oct 5 and the Salesforce demand line is gone"
+    },
+    {
+      "week": "2026-10-12",
+      "hire": "Sakshi",
+      "client": "DoorDash",
+      "role": "SQL Analyst (Critical River transition)",
+      "project": "Door Dash - RSL Critical River Resource Transition",
+      "status": "requisition closed this week; offer approved for an Oct 19 start (Salesforce still carries the line as Sakshi-SQL Analyst, Verbal Agreement 80%)"
+    },
+    {
+      "week": "2026-10-12",
+      "hire": "Julia",
+      "client": "Cleartelligence (internal)",
+      "role": "Marketing Manager (3-month contract)",
+      "project": "Marketing",
+      "status": "starting the contract on Oct 15"
+    }
+  ]
+}

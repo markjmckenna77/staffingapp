@@ -13,3 +13,8 @@ next-env.d.ts
 
 # local data exports - never commit (repo is public)
 claude-artifact-export-*.json
+
+# pipeline run output (GitHub Actions writes these; never commit)
+pipeline/out/
+pipeline/state/
+__pycache__/

@@ -1,0 +1,45 @@
+-- =====================================================================
+-- Staffing dashboard pipeline (GitHub Actions): three more cost-free views
+-- Run once as ACCOUNTADMIN (or the role that owns PRD_BI_SUITE.STAFFING_APP).
+-- Prepared 2026-10-14. Safe to re-run.
+--
+-- The Monday build reads five objects. Two already exist from setup.sql
+-- (STAFFING_APP.WEEKLY_AVAILABILITY, STAFFING_APP.PROJECT_TIME); these add the other three.
+-- STAFFING_APP_RO already has SELECT on future views in the schema, so no new grants.
+-- Deliberately left out: CONS_CONSULTANT.LABOR_COST, EMAIL, NETSUITE_ID, STAFFING_VENDOR.
+-- =====================================================================
+
+use role ACCOUNTADMIN;
+
+create or replace view PRD_BI_SUITE.STAFFING_APP.CONSULTANT as
+select
+  CONSULTANT_ID, NAME, OFFICE, RELATIONSHIP, HIRE_DATE, TERM_DATE, EMPLOYEE_TYPE, ACTIVE_FLAG,
+  TITLE, COUNTRY, REGION, JOB_LEVEL, TARGET_UTILIZATION, PRACTICE, REPORTS_TO, STATUS_CATEGORY
+from PRD_BI_SUITE.CONS_BI.CONS_CONSULTANT;
+
+create or replace view PRD_BI_SUITE.STAFFING_APP.CONSULTANT_PROJECT_DETAIL as
+select
+  CONSULTANT_ID, CONSULTANT_NAME, WEEK_FIRST_DAY_AT, MONTH_ID, YEAR_ID, QUARTER_ID,
+  PROJECT_ID, PROJECT_NAME, CUSTOMER_NAME, PROJECT_STATUS, OPTY_STAGE,
+  ALLOCATED_BILLABLE_HOURS, ALLOCATED_TOTAL_HOURS, ACTUAL_BILLABLE_HOURS, ACTUAL_TOTAL_HOURS,
+  PROJECT_MANAGER, OPTY_PROBABILITY, OPTY_FORECAST_CATEGORY, OPTY_CLOSE_DATE
+from PRD_BI_SUITE.CONS_BI.CONS_CONSULTANT_PROJECT_DETAIL;
+
+create or replace view PRD_BI_SUITE.STAFFING_APP.OPEN_DEMAND as
+select
+  PROJECT_ID, PROJECT_NAME, CUSTOMER_NAME, ROLE_TITLE, GENERIC_BUCKET_ID, WEEK_FIRST_DAY_AT,
+  HRS_ALLOCATED_RAW, HRS_ALLOCATED_EXCL_TIME_OFF, PROJECT_STATUS, PRACTICE, OFFICE, REGION,
+  PROJECT_MANAGER, OPTY_STAGE, OPTY_PROBABILITY, OPTY_FORECAST_CATEGORY, OPTY_CLOSE_DATE,
+  OPTY_ESTIMATED_START_DATE
+from PRD_BI_SUITE.CONS_BI.CONS_OPEN_DEMAND;
+
+-- belt and braces, in case the future-views grant was not applied
+grant select on all views in schema PRD_BI_SUITE.STAFFING_APP to role STAFFING_APP_RO;
+
+-- Verify (as the service role): each should return a row count, not an error
+use role STAFFING_APP_RO;
+select 'CONSULTANT' v, count(*) from PRD_BI_SUITE.STAFFING_APP.CONSULTANT
+union all select 'CONSULTANT_PROJECT_DETAIL', count(*) from PRD_BI_SUITE.STAFFING_APP.CONSULTANT_PROJECT_DETAIL
+union all select 'OPEN_DEMAND', count(*) from PRD_BI_SUITE.STAFFING_APP.OPEN_DEMAND
+union all select 'WEEKLY_AVAILABILITY', count(*) from PRD_BI_SUITE.STAFFING_APP.WEEKLY_AVAILABILITY
+union all select 'PROJECT_TIME', count(*) from PRD_BI_SUITE.STAFFING_APP.PROJECT_TIME;

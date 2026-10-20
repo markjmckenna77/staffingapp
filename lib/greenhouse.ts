@@ -18,8 +18,9 @@
 //   GH_FIELD_CLIENT / GH_FIELD_PORTFOLIO / GH_FIELD_START / GH_FIELD_NOTES / GH_FIELD_EMP
 //                             job custom-field keys when they differ from the defaults below
 //                             (GET /api/recruiting?discover=1 lists what the account actually has)
-//   GH_EXCLUDE_JOBS           regex of job names to leave out (default ^internal\b - Mark, Oct 5 2026:
-//                             "exclude any role that starts with Internal")
+//   GH_EXCLUDE_JOBS           regex of job names to leave out of the sync. No default since Oct 20 2026
+//                             (Mark: "don't forget to include internal roles") - internal/SG&A requisitions
+//                             are pulled and kept in the data; the page hides them (hide_open_roles.py).
 //   GH_INTERVIEW_STAGES       regex of stage names that count as "interviewing"
 //                             (default: interview|screen|onsite|panel|team|final|technical|case)
 // Server-only module. Never import from a client component.
@@ -41,7 +42,7 @@ const FIELD = {
   notes: (process.env.GH_FIELD_NOTES ?? "status_notes").toLowerCase(),
   emp: (process.env.GH_FIELD_EMP ?? "employment_type").toLowerCase(),
 };
-const EXCLUDE = new RegExp(process.env.GH_EXCLUDE_JOBS ?? "^\\s*internal\\b", "i");
+const EXCLUDE = process.env.GH_EXCLUDE_JOBS ? new RegExp(process.env.GH_EXCLUDE_JOBS, "i") : null;
 const INTERVIEW = new RegExp(process.env.GH_INTERVIEW_STAGES ?? "interview|screen|onsite|panel|team|final|technical|case", "i");
 
 export function greenhouseConfigured(): boolean { return !!process.env.GREENHOUSE_API_KEY; }
@@ -117,7 +118,7 @@ function usDate(iso: string): string {
 
 /** Open requisitions in the dashboard's ATS shape. */
 export async function pullRequisitions(): Promise<{ asOf: string; reqs: Req[] }> {
-  const jobs = (await all<GHJob>("/jobs?status=open&per_page=500")).filter((j) => !EXCLUDE.test(j.name));
+  const jobs = (await all<GHJob>("/jobs?status=open&per_page=500")).filter((j) => !(EXCLUDE && EXCLUDE.test(j.name)));
   const apps = await all<GHApp>("/applications?status=active&per_page=500", 40);
   const interviewing = new Map<number, number>();
   for (const a of apps) {
