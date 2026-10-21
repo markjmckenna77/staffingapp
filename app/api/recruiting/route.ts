@@ -4,10 +4,11 @@
 //   GET ?discover=1     custom-field keys and stage names the account uses (admins) - for GH_FIELD_*
 //   GET ?fresh=1        bypass the 10-minute cache
 // Auth: a signed-in session, or Bearer IMPORT_TOKEN (the Monday build pulls this instead of an xlsx).
-// 503 greenhouse_not_configured until GREENHOUSE_API_KEY is set; the page then keeps the build-time data.
+// 503 greenhouse_not_configured until GH_CLIENT_ID / GH_CLIENT_SECRET (Harvest v3 OAuth, Oct 21 2026) are set;
+// the page then keeps the build-time data.
 import { NextResponse } from "next/server";
 import { actor, bearerOk, isAdmin } from "@/lib/api";
-import { discover, greenhouseConfigured, pullRequisitions, type Req } from "@/lib/greenhouse";
+import { discover, greenhouseConfigNote, greenhouseConfigured, pullRequisitions, type Req } from "@/lib/greenhouse";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,7 @@ export async function GET(req: Request) {
   const who = await actor();
   if (!who && !bearerOk(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const u = new URL(req.url);
-  if (!greenhouseConfigured()) return NextResponse.json({ error: "greenhouse_not_configured" }, { status: 503 });
+  if (!greenhouseConfigured()) return NextResponse.json({ error: "greenhouse_not_configured", detail: greenhouseConfigNote() }, { status: 503 });
   try {
     if (u.searchParams.get("discover") === "1") {
       if (!isAdmin(who)) return NextResponse.json({ error: "not_an_admin" }, { status: 403 });

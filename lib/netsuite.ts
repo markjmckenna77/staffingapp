@@ -1,4 +1,4 @@
-// NetSuite adapter - Oct 5 2026.
+// NetSuite adapter - Oct 5 2026 (Oct 21: create falls back to a lookup when the reply has no Location header).
 //
 // NetSuite is the system of record for staffing. Every line on the dashboard traces back to a
 // NetSuite Resource Allocation (RAW_NETSUITE.RESOURCEALLOCATION -> STG_BI.STG_ALLOCATED_TIME ->
@@ -94,7 +94,7 @@ function oauthHeader(method: string, url: string): string {
   return "OAuth " + parts.join(", ");
 }
 
-async function ns<T>(method: string, path: string, body?: unknown, extraHeaders: Record<string, string> = {}): Promise<{ data: T; headers: Headers }> {
+async function ns<T>(method: string, path: string, body?: unknown, extraHeaders: Record<string, string> = {}): Promise<{ data: T; headers: Headers; status: number }> {
   if (!netsuiteConfigured()) throw nerr("netsuite_not_configured");
   const url = `${base()}${path}`;
   const r = await fetch(url, {
@@ -108,13 +108,44 @@ async function ns<T>(method: string, path: string, body?: unknown, extraHeaders:
     body: body === undefined ? undefined : JSON.stringify(body),
     cache: "no-store",
   });
-  if (r.status === 204) return { data: undefined as T, headers: r.headers };
+  if (r.status === 204) return { data: undefined as T, headers: r.headers, status: r.status };
   const text = await r.text();
   let j: unknown = {};
   try { j = text ? JSON.parse(text) : {}; } catch { j = { raw: text.slice(0, 2000) }; }
   if (r.status === 401 || r.status === 403) throw nerr("netsuite_auth_failed", j);
   if (!r.ok) throw nerr("netsuite_request_failed", { status: r.status, body: j });
-  return { data: j as T, headers: r.headers };
+  return { data: j as T, headers: r.headers, status: r.status };
+}
+
+/**
+ * The id of the Resource Allocation a POST just created. NetSuite normally answers 204 with a
+ * Location header (…/resourceAllocation/<id>); some accounts/roles answer 200/201 with no header
+ * even though the record was created (seen Oct 21 2026). In that case the record is looked up by
+ * employee + project + start date, newest first, so the caller can carry on (retire the generic
+ * allocation, report the id) instead of failing after the write already happened. The status
+ * code and header are always logged so a missing header can be told apart from a real failure.
+ */
+async function createdAllocationId(
+  created: { headers: Headers; status: number },
+  key: { employeeId: number; projectId: number; startDate: string },
+  what: string,
+): Promise<number> {
+  const loc = created.headers.get("location") ?? "";
+  const idm = /\/resourceAllocation\/(\d+)/.exec(loc);
+  console.info("netsuite create resourceAllocation", { what, status: created.status, location: loc || null, ...key });
+  if (idm) return Number(idm[1]);
+  const rows = await suiteql(
+    `SELECT id FROM resourceallocation WHERE allocationresource = ${key.employeeId} AND project = ${key.projectId} ` +
+    `AND startdate = TO_DATE('${esc(key.startDate)}', 'YYYY-MM-DD') ORDER BY id DESC`);
+  if (rows.length === 0) {
+    throw nerr("netsuite_request_failed", {
+      detail: `create returned ${created.status} with no Location header and no allocation was found for ${what}`,
+      status: created.status, location: loc || null, ...key,
+    });
+  }
+  const id = Number(rows[0].id);
+  console.warn("netsuite create resourceAllocation: no Location header, matched by lookup", { what, status: created.status, id, candidates: rows.length, ...key });
+  return id;
 }
 
 type SuiteQL = { items: Array<Record<string, string | number | null>>; hasMore?: boolean };
@@ -237,10 +268,7 @@ export async function createAllocation(a: NsAllocationInput): Promise<NsAllocati
   if (process.env.NS_REQUESTED_BY_ID) body.requestedBy = { id: process.env.NS_REQUESTED_BY_ID };
 
   const created = await ns<unknown>("POST", "/services/rest/record/v1/resourceAllocation", body);
-  const loc = created.headers.get("location") ?? "";
-  const idm = /\/resourceAllocation\/(\d+)/.exec(loc);
-  if (!idm) throw nerr("netsuite_request_failed", { detail: "no Location header on create", location: loc });
-  result.allocationId = Number(idm[1]);
+  result.allocationId = await createdAllocationId(created, { employeeId: emp.id, projectId: proj.id, startDate }, `${emp.name} on ${proj.name}`);
   result.url = `https://${accountHost()}.app.netsuite.com/app/accounting/project/resourceallocation.nl?id=${result.allocationId}`;
 
   if (generic) {
@@ -373,8 +401,7 @@ async function trimRange(emp: { id: number }, proj: { id: number }, allocs: EmpA
       if (al.role) body[F.roleField] = al.role;
       if (process.env.NS_REQUESTED_BY_ID) body.requestedBy = { id: process.env.NS_REQUESTED_BY_ID };
       const created = await ns<unknown>("POST", "/services/rest/record/v1/resourceAllocation", body);
-      const idm = /\/resourceAllocation\/(\d+)/.exec(created.headers.get("location") ?? "");
-      if (idm) act.tailAllocationId = Number(idm[1]);
+      act.tailAllocationId = await createdAllocationId(created, { employeeId: emp.id, projectId: proj.id, startDate: addDays(to, 1) }, `tail of allocation ${al.id}`);
     }
   }
 }
@@ -531,8 +558,7 @@ export async function reshapeWeeks(a: NsReshapeInput): Promise<NsReshapeResult> 
           };
           if (process.env.NS_REQUESTED_BY_ID) body.requestedBy = { id: process.env.NS_REQUESTED_BY_ID };
           const created = await ns<unknown>("POST", "/services/rest/record/v1/resourceAllocation", body);
-          const idm = /\/resourceAllocation\/(\d+)/.exec(created.headers.get("location") ?? "");
-          if (idm) row.allocationId = Number(idm[1]);
+          row.allocationId = await createdAllocationId(created, { employeeId: emp.id, projectId: proj.id, startDate }, `${emp.name} on ${proj.name} (week-by-week)`);
         }
       }
       k = m + 1;

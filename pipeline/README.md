@@ -79,10 +79,9 @@ workflow's secrets, then `python pipeline/run.py` (add `--publish` to upload).
 
 ## Oct 21 2026 changes (Mark)
 - Open Roles & Recruiting (`src/open_roles_restyle.py`, runs after `recruiting_roles_format.py`): each role's
-  title row is a light-blue band and is itself the click target for the staffing suggestions (the separate
-  "Staffing Suggestions and Allocations" line is gone; a small "suggestions & allocations" hint sits under
-  the title until the role is open). The recruiting-update callout is grey instead of yellow, so the amber
-  week cells are the only yellow in the section.
+  title row is a light-blue band; the "Staffing Suggestions and Allocations" line under the update stays
+  (closed by default). The recruiting-update callout is grey instead of yellow, so the amber week cells
+  are the only yellow in the section.
 - Consultant modal (`src/consultant_modal.py`, last in the chain): click a name in the 8 Week Outlook. Three
   parts - **Week by week** (the 8 weeks per project, hours editable; Apply → `POST /api/allocate`
   `{kind:"reshape"}`, which rewrites only the weeks that differ from NetSuite: trims the existing coverage
