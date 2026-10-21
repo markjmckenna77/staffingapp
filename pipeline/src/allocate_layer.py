@@ -229,9 +229,6 @@ js = must_replace('''      if (i1 < i0) { var t = i0; i0 = i1; i1 = t; }
       if (endIso && weekISO(i0) && endIso < weekISO(i0)) { endD.focus(); flashDrawerError("The end date is before the first week."); return; }
       if (!requireAuthor()) return;
       var weeks = GRID.weeks.slice(i0, i1 + 1);''', where=js)
-js = must_replace('''    if (S.allocPrefillKind) { changeSel.value = S.allocPrefillKind; S.allocPrefillKind = ""; }
-    syncKind();''', '''    if (S.allocPrefillKind) { changeSel.value = S.allocPrefillKind; S.allocPrefillKind = ""; }
-    syncKind(); syncEnd();''', where=js)
 js = must_replace(OLD_CLICK, NEW_CLICK, where=js)
 js = must_replace('''                note: (note.value || "").trim(), key: key, label: subjectLabel(key), author: S.author, week: THIS_WEEK,
                 fillOpenRole: !!roleSel.value }) })''', '''                endDate: endIso || undefined,
@@ -279,7 +276,7 @@ js = must_replace('''    var allocBtn = el("button", "ct-ghost", "+ Allocation")
 js = must_replace('''    if (kind === "project") changeSel.value = "remove";
     syncKind();''', '''    if (kind === "project") changeSel.value = "remove";
     if (S.allocPrefillKind) { changeSel.value = S.allocPrefillKind; S.allocPrefillKind = ""; }
-    syncKind();''', where=js)
+    syncKind(); syncEnd();''', where=js)
 for old, new in [
     ('" hrs/wk), not yet in Salesforce"', '" hrs/wk), not yet in NetSuite"'),
     ('"Pending Salesforce entry"', '"Pending NetSuite entry"'),
