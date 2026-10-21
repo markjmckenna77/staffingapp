@@ -204,7 +204,39 @@ NEW_CLICK = '''      var weeks = GRID.weeks.slice(i0, i1 + 1);
         return;
       }
       S.db.collection("allocations").add({'''
+# Oct 21 2026 (Mark): end date on the drawer form - the assignment length, not the 8-week grid
+js = must_replace('''    wkTo.value = String(Math.max(0, GRID.weeks.length - 1));
+    var note = field(f, "Note", "input", { placeholder: "optional - why, caveats" });''', '''    wkTo.value = String(Math.max(0, GRID.weeks.length - 1));
+    // Oct 21 2026 (Mark): the assignment runs as long as it runs, not to the end of the 8-week grid.
+    var endD = field(f, "End date", "input", { type: "date" });
+    var endHint = el("div", "ct-hint"); endHint.style.marginTop = "0"; endD.parentNode.appendChild(endHint);
+    function fridayOf(i) { var w = weekISO(i); if (!w) return ""; var d = new Date(w + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + 4); return d.toISOString().slice(0, 10); }
+    function syncEnd() {
+      var r = roleSel.value && !isRemove() ? roleByKey(roleSel.value) : null;
+      endD.parentNode.hidden = isRemove();
+      if (r) { endD.value = ""; endHint.textContent = "blank = through the end of the role as set in NetSuite; or pick the last day"; }
+      else { endD.value = fridayOf(parseInt(wkTo.value, 10) || 0); endHint.textContent = "the assignment's last day - any date, not just the 8 weeks shown"; }
+    }
+    wkTo.addEventListener("change", function () { if (!(roleSel.value && roleByKey(roleSel.value))) endD.value = fridayOf(parseInt(wkTo.value, 10) || 0); });
+    var note = field(f, "Note", "input", { placeholder: "optional - why, caveats" });''', where=js)
+js = must_replace('''    roleSel.addEventListener("change", syncRole);''', '''    roleSel.addEventListener("change", syncRole);
+    roleSel.addEventListener("change", syncEnd);
+    changeSel.addEventListener("change", syncEnd);''', where=js)
+js = must_replace('''      if (i1 < i0) { var t = i0; i0 = i1; i1 = t; }
+      if (!requireAuthor()) return;
+      var weeks = GRID.weeks.slice(i0, i1 + 1);''', '''      if (i1 < i0) { var t = i0; i0 = i1; i1 = t; }
+      var endIso = isRemove() ? "" : (endD.value || "").trim();
+      if (endIso && weekISO(i0) && endIso < weekISO(i0)) { endD.focus(); flashDrawerError("The end date is before the first week."); return; }
+      if (!requireAuthor()) return;
+      var weeks = GRID.weeks.slice(i0, i1 + 1);''', where=js)
+js = must_replace('''    if (S.allocPrefillKind) { changeSel.value = S.allocPrefillKind; S.allocPrefillKind = ""; }
+    syncKind();''', '''    if (S.allocPrefillKind) { changeSel.value = S.allocPrefillKind; S.allocPrefillKind = ""; }
+    syncKind(); syncEnd();''', where=js)
 js = must_replace(OLD_CLICK, NEW_CLICK, where=js)
+js = must_replace('''                note: (note.value || "").trim(), key: key, label: subjectLabel(key), author: S.author, week: THIS_WEEK,
+                fillOpenRole: !!roleSel.value }) })''', '''                endDate: endIso || undefined,
+                note: (note.value || "").trim(), key: key, label: subjectLabel(key), author: S.author, week: THIS_WEEK,
+                fillOpenRole: !!roleSel.value }) })''', where=js)
 
 js = must_replace('''  function closeDrawer() {
     drawer.hidden = true; scrim.hidden = true; S.openKey = null; formOpen = null;
