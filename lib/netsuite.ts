@@ -4,8 +4,10 @@
 // NetSuite Resource Allocation (RAW_NETSUITE.RESOURCEALLOCATION -> STG_BI.STG_ALLOCATED_TIME ->
 // CONS_BI.CONS_ALLOCATED_TIME / CONS_CONSULTANT_PROJECT_DETAIL / CONS_WEEKLY_AVAILABILITY), and an
 // "open role" is an allocation whose resource is a generic resource (_Data Mgmt, _AI/ML, ...).
-// So "make the allocation in all of our systems" means: create the employee's allocation in
-// NetSuite (and, when asked, retire the generic one it fills). Fivetran copies the change into
+// So "fill an open role" means: put the employee on that generic allocation (PATCH its resource)
+// - the open role's own record becomes the consultant's allocation, nothing new is created
+// (Mark, Oct 21 2026: creating a second record and retiring the generic one left a new "role"
+// behind). A plain allocation with no open role behind it is created. Fivetran copies the change into
 // Snowflake on its next sync and the dbt build rebuilds the CONS_* tables - nothing is written
 // to Snowflake directly, or dbt would overwrite it on the next run.
 //
@@ -26,9 +28,11 @@ export type NsAllocationInput = {
   projectId?: number;        // when the caller already knows it
   roleTitle?: string;        // the open role's title, e.g. "US Sr. Databricks Data Engineer"
   hours: number;             // per week
-  weeks: string[];           // Monday ISO dates the allocation covers
+  weeks: string[];           // Monday ISO dates the allocation covers (at least the first week)
+  endDate?: string;          // ISO; the allocation runs to this date. Default: the open role's own end date when
+                             // filling one (the whole assignment, not the 8-week grid), else Friday of the last week
   note?: string;
-  fillOpenRole?: boolean;    // retire the generic allocation this fills (default true when roleTitle given)
+  fillOpenRole?: boolean;    // fill the generic allocation in place (default true when roleTitle given)
   requestedBy?: string;      // dashboard author, recorded in the notes
 };
 
@@ -42,7 +46,10 @@ export type NsAllocationResult = {
   percentOfTime: number;
   allocationId?: number;
   url?: string;
-  openRole?: { allocationId: number; action: "ended" | "zeroed" | "none"; title: string } | null;
+  // "filled": the generic allocation itself now carries the consultant (allocationId is that record).
+  // "ended" / "zeroed" are what older entries did (a second record was created); kept for old logs.
+  openRole?: { allocationId: number; action: "filled" | "ended" | "zeroed" | "none"; title: string;
+               was?: { startDate: string; endDate: string; hoursPerWeek: number } } | null;
 };
 
 const F = {
@@ -192,21 +199,38 @@ export async function findProject(label: string, id?: number): Promise<{ id: num
 
 type GenericAlloc = { id: number; title: string; startdate: string; enddate: string; numberhours: number; percentoftime: number; allocationunit: string; notes: string };
 
-/** The generic-resource allocation (the open role) on a project, matched by role title. */
+/** Every generic-resource allocation (open role) on a project that has not ended. */
+export async function listOpenRoleAllocations(projectId: number): Promise<GenericAlloc[]> {
+  const cols = `ra.id, ra.startdate, ra.enddate, ra.numberhours, ra.percentoftime, ra.allocationunit, ra.notes, g.name AS resource`;
+  const fromWhere = `FROM resourceallocation ra JOIN genericresource g ON g.id = ra.allocationresource ` +
+    `WHERE ra.project = ${projectId} AND ra.enddate >= CURRENT_DATE ORDER BY ra.startdate`;
+  let rows: SuiteQL["items"];
+  try {
+    rows = await suiteql(`SELECT ${cols}, ra.${F.roleField} AS title ${fromWhere}`);
+  } catch (e) {
+    // the role-title custom field is not on every account: fall back to the generic resource's name as the title
+    console.warn("netsuite: role field query failed, matching on generic resource name", { field: F.roleField, detail: (e as { detail?: unknown }).detail });
+    rows = await suiteql(`SELECT ${cols} ${fromWhere}`);
+  }
+  return rows.map((r) => ({
+    id: Number(r.id), title: String(r.title ?? r.resource ?? ""), startdate: String(r.startdate ?? ""), enddate: String(r.enddate ?? ""),
+    numberhours: Number(r.numberhours ?? 0), percentoftime: Number(r.percentoftime ?? 0),
+    allocationunit: String(r.allocationunit ?? ""), notes: String(r.notes ?? ""),
+  }));
+}
+
+/**
+ * The generic-resource allocation (the open role) on a project, matched by role title: exact,
+ * then one containing the other, then - when the project has exactly one open role - that one.
+ */
 export async function findOpenRoleAllocation(projectId: number, roleTitle: string): Promise<GenericAlloc | null> {
-  const rows = await suiteql(
-    `SELECT ra.id, ra.${F.roleField} AS title, ra.startdate, ra.enddate, ra.numberhours, ra.percentoftime, ra.allocationunit, ra.notes ` +
-    `FROM resourceallocation ra JOIN genericresource g ON g.id = ra.allocationresource ` +
-    `WHERE ra.project = ${projectId} AND ra.enddate >= CURRENT_DATE ORDER BY ra.startdate`);
-  const norm = (s: unknown) => String(s ?? "").toLowerCase().replace(/\s+/g, " ").trim();
+  const rows = await listOpenRoleAllocations(projectId);
+  const norm = (s: unknown) => String(s ?? "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
   const want = norm(roleTitle);
-  const hit = rows.find((r) => norm(r.title) === want) ?? rows.find((r) => want && (norm(r.title).includes(want) || want.includes(norm(r.title))));
-  if (!hit) return null;
-  return {
-    id: Number(hit.id), title: String(hit.title ?? ""), startdate: String(hit.startdate ?? ""), enddate: String(hit.enddate ?? ""),
-    numberhours: Number(hit.numberhours ?? 0), percentoftime: Number(hit.percentoftime ?? 0),
-    allocationunit: String(hit.allocationunit ?? ""), notes: String(hit.notes ?? ""),
-  };
+  const hit = rows.find((r) => norm(r.title) === want)
+    ?? rows.find((r) => want && norm(r.title) && (norm(r.title).includes(want) || want.includes(norm(r.title))))
+    ?? (rows.length === 1 ? rows[0] : undefined);
+  return hit ?? null;
 }
 
 // ---- dates ------------------------------------------------------------------------------
@@ -226,11 +250,18 @@ function today(): string { return new Date().toISOString().slice(0, 10); }
 // ---- the write --------------------------------------------------------------------------
 
 /**
- * Creates the employee's Resource Allocation for the weeks given (Monday of the first week through
- * Friday of the last), as a Hard allocation in percent of time (hours/week over 40). When
- * fillOpenRole is set and the project carries a generic allocation with that role title, the
- * generic one is ended the day before the new allocation starts - or zeroed when it has already
- * started - with a note saying who filled it from the dashboard.
+ * Puts the employee on a project for the weeks given (Monday of the first week through Friday of
+ * the last), as a Hard allocation in percent of time (hours/week over 40).
+ *
+ * Filling an open role (fillOpenRole, default on when a roleTitle is given): the project's
+ * generic-resource allocation with that title IS the open role, so it is filled in place - its
+ * resource is changed from the generic resource to the employee, and its dates / hours set to
+ * what was chosen on the dashboard. No second record is created, so nothing is left behind that
+ * reads as a new role. If the project has no open role matching the title the call fails with
+ * netsuite_open_role_not_found (listing the open roles it does have) rather than creating a
+ * duplicate; the caller can retry with fillOpenRole:false to add a plain allocation.
+ *
+ * Without an open role to fill, the employee's allocation is created new.
  */
 export async function createAllocation(a: NsAllocationInput): Promise<NsAllocationResult> {
   if (!netsuiteConfigured()) throw nerr("netsuite_not_configured");
@@ -238,21 +269,64 @@ export async function createAllocation(a: NsAllocationInput): Promise<NsAllocati
   if (!(a.hours > 0)) throw nerr("bad_body", "hours must be positive");
   const dryRun = netsuiteDryRun();
   const weeks = a.weeks.slice().sort();
-  const startDate = weeks[0], endDate = addDays(weeks[weeks.length - 1], 4);
+  const startDate = weeks[0], gridEnd = addDays(weeks[weeks.length - 1], 4);
   const percentOfTime = Math.min(100, Math.round((a.hours / 40) * 1000) / 10);
 
   const emp = await findEmployee(a.consultant);
   const proj = await findProject(a.project, a.projectId);
   const wantFill = a.fillOpenRole ?? !!a.roleTitle;
   const generic = wantFill && a.roleTitle ? await findOpenRoleAllocation(proj.id, a.roleTitle) : null;
+  // How long the assignment is: an explicit end date wins; filling an open role runs to the role's own end
+  // (Mark, Oct 21 2026: not an 8-week cutoff); otherwise Friday of the last week given.
+  const explicitEnd = a.endDate && /^\d{4}-\d{2}-\d{2}$/.test(a.endDate) ? a.endDate : "";
+  const roleEnd = generic ? isoDate(generic.enddate) : "";
+  const endDate = explicitEnd || (roleEnd && roleEnd > gridEnd ? roleEnd : gridEnd);
+  if (endDate < startDate) throw nerr("bad_body", `end date ${endDate} is before the start ${startDate}`);
+  if (wantFill && a.roleTitle && !generic) {
+    const have = await listOpenRoleAllocations(proj.id);
+    throw nerr("netsuite_open_role_not_found", {
+      project: proj.name, roleTitle: a.roleTitle,
+      openRoles: have.map((g) => ({ allocationId: g.id, title: g.title, startDate: isoDate(g.startdate), endDate: isoDate(g.enddate) })),
+      hint: "no generic allocation with that title on the project; nothing was written (send fillOpenRole:false to add a new allocation instead)",
+    });
+  }
 
   const stamp = `${today()} staffing dashboard${a.requestedBy ? ` (${a.requestedBy})` : ""}`;
   const notes = [`${stamp}: ${a.hours} hrs/wk ${startDate} to ${endDate}`, a.note?.trim()].filter(Boolean).join(" - ").slice(0, 3900);
 
   const result: NsAllocationResult = {
     dryRun, employeeId: emp.id, projectId: proj.id, projectName: proj.name, startDate, endDate, percentOfTime,
-    openRole: generic ? { allocationId: generic.id, action: "none", title: generic.title } : null,
+    openRole: null,
   };
+
+  if (generic) {
+    // Fill the open role in place: the generic allocation becomes the consultant's allocation.
+    const gs = isoDate(generic.startdate), ge = isoDate(generic.enddate);
+    const was = { startDate: gs, endDate: ge, hoursPerWeek: hoursPerWeekOf({ ...generic, startdate: gs, enddate: ge }) };
+    result.allocationId = generic.id;
+    result.openRole = { allocationId: generic.id, action: "filled", title: generic.title, was };
+    result.url = `https://${accountHost()}.app.netsuite.com/app/accounting/project/resourceallocation.nl?id=${generic.id}`;
+    if (dryRun) return result;
+    const fillBody: Record<string, unknown> = {
+      allocationResource: { id: String(emp.id) },
+      startDate, endDate,
+      allocationUnit: { id: "P" },
+      percentOfTime,
+      notes: `${stamp}: open role "${generic.title}" filled by ${emp.name}, ${a.hours} hrs/wk ${startDate} to ${endDate}` +
+        ` (was ${was.startDate} to ${was.endDate}, ${was.hoursPerWeek} hrs/wk)${a.note?.trim() ? ` - ${a.note.trim()}` : ""}\r\n${generic.notes}`.slice(0, 3900),
+    };
+    if (process.env.NS_REQUESTED_BY_ID) fillBody.requestedBy = { id: process.env.NS_REQUESTED_BY_ID };
+    console.info("netsuite fill open role", { allocationId: generic.id, title: generic.title, employeeId: emp.id, projectId: proj.id, startDate, endDate, percentOfTime });
+    console.info("netsuite fill open role: window", { startDate, endDate, roleEnd, explicitEnd: explicitEnd || null, gridEnd });
+    const patched = await ns("PATCH", `/services/rest/record/v1/resourceAllocation/${generic.id}`, fillBody);
+    // Confirm the record now carries the employee before reporting success.
+    const check = await suiteql(`SELECT allocationresource FROM resourceallocation WHERE id = ${generic.id}`);
+    if (check.length === 1 && Number(check[0].allocationresource) !== emp.id) {
+      throw nerr("netsuite_request_failed", { detail: `PATCH of allocation ${generic.id} returned ${patched.status} but its resource is still ${check[0].allocationresource}`, allocationId: generic.id, employeeId: emp.id });
+    }
+    return result;
+  }
+
   if (dryRun) return result;
 
   const body: Record<string, unknown> = {
@@ -270,19 +344,6 @@ export async function createAllocation(a: NsAllocationInput): Promise<NsAllocati
   const created = await ns<unknown>("POST", "/services/rest/record/v1/resourceAllocation", body);
   result.allocationId = await createdAllocationId(created, { employeeId: emp.id, projectId: proj.id, startDate }, `${emp.name} on ${proj.name}`);
   result.url = `https://${accountHost()}.app.netsuite.com/app/accounting/project/resourceallocation.nl?id=${result.allocationId}`;
-
-  if (generic) {
-    const gStart = isoDate(generic.startdate);
-    const fillNote = `${stamp}: filled by ${emp.name} (allocation ${result.allocationId})\r\n${generic.notes}`.slice(0, 3900);
-    if (gStart < startDate) {
-      await ns("PATCH", `/services/rest/record/v1/resourceAllocation/${generic.id}`, { endDate: addDays(startDate, -1), notes: fillNote });
-      result.openRole = { allocationId: generic.id, action: "ended", title: generic.title };
-    } else {
-      // already started: keep the row (recruiting history lives in its notes) but take the demand out
-      await ns("PATCH", `/services/rest/record/v1/resourceAllocation/${generic.id}`, { allocationUnit: { id: "H" }, numberHours: 0, notes: fillNote });
-      result.openRole = { allocationId: generic.id, action: "zeroed", title: generic.title };
-    }
-  }
   return result;
 }
 

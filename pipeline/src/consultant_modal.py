@@ -47,6 +47,7 @@ CSS = """
 .cm-sec { margin-top: 14px; }
 .cm-sec h4 { margin: 0 0 6px; font-size: 11.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-secondary); }
 .cm-sec .cm-why { font-size: 11.5px; color: var(--text-secondary); margin: 0 0 8px; }
+.cm-form .cm-hint { display: block; font-size: 10.5px; color: var(--text-secondary); margin-top: 2px; }
 .cm-grid { width: 100%; border-collapse: collapse; }
 .cm-grid th, .cm-grid td { padding: 4px 6px; border-bottom: 1px solid var(--gridline); text-align: center; font-variant-numeric: tabular-nums; }
 .cm-grid th { font-size: 10.5px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.03em; }
@@ -111,6 +112,7 @@ HTML_JS = r"""
     var d = j.detail && typeof j.detail === "object" ? JSON.stringify(j.detail) : (j.detail || "");
     var code = { netsuite_allocation_not_found: "no allocation found", netsuite_employee_not_found: "consultant not found in NetSuite",
       netsuite_project_not_found: "project not found in NetSuite", netsuite_project_ambiguous: "more than one project matches",
+      netsuite_open_role_not_found: "no open role with that title on the project in NetSuite - nothing was written",
       netsuite_not_configured: "NetSuite isn't connected", not_an_approver: "you are not an approver" }[j.error] || j.error || ("HTTP " + j.__status);
     return "NetSuite refused (" + code + ")" + (d ? ": " + String(d).slice(0, 240) : "");
   }
@@ -321,16 +323,20 @@ HTML_JS = r"""
   function assignSection(c, live) {
     var sec = el("div", "cm-sec");
     sec.appendChild(el("h4", null, "Assign"));
-    sec.appendChild(el("p", "cm-why", "To an open role on this page (hours and weeks prefilled from its demand; the role's generic allocation in NetSuite is filled) or to any other project."));
+    sec.appendChild(el("p", "cm-why", "To an open role on this page (hours prefilled from its demand; the role's own allocation in NetSuite is filled, for the whole length of the role) or to any other project. The end date is how long the assignment runs - it is not limited to the 8 weeks on the grid."));
     var f = el("div", "cm-form");
     function field(label, node) { var l = el("label", null, label); l.appendChild(node); f.appendChild(l); return node; }
     var roleSel = field("Open role", el("select")); var o0 = el("option", null, "Other project (not an open role)"); o0.value = ""; roleSel.appendChild(o0);
     (c.ROLES || []).forEach(function (r) { var o = el("option", null, r.label); o.value = r.key; roleSel.appendChild(o); });
     var proj = field("Project", el("input")); proj.placeholder = "client / project name"; proj.setAttribute("list", "cm-proj-list");
     var hrs = field("Hours / week", el("input")); hrs.type = "number"; hrs.min = "1"; hrs.max = "60"; hrs.step = "1"; hrs.value = "40";
-    var from = field("From week", el("select")), thru = field("Through", el("select"));
-    c.GRID.weeks.forEach(function (w, i) { var a = el("option", null, w); a.value = String(i); from.appendChild(a); var b = el("option", null, w); b.value = String(i); thru.appendChild(b); });
-    thru.value = String(Math.max(0, c.GRID.weeks.length - 1));
+    var from = field("From week", el("select"));
+    c.GRID.weeks.forEach(function (w, i) { var a = el("option", null, w); a.value = String(i); from.appendChild(a); });
+    var endD = field("End date", el("input")); endD.type = "date";
+    var endHint = el("span", "cm-hint", ""); endD.parentNode.appendChild(endHint);
+    function fridayOf(i) { var w = c.weekISO(i); if (!w) return ""; var d = new Date(w + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + 4); return d.toISOString().slice(0, 10); }
+    endD.value = fridayOf(c.GRID.weeks.length - 1); endD.min = fridayOf(0);
+    endHint.textContent = "the assignment's last day";
     var note = field("Note", el("input")); note.placeholder = "optional"; note.parentNode.className = "cm-wide";
     function roleByKey(k) { for (var i = 0; i < c.ROLES.length; i++) if (c.ROLES[i].key === k) return c.ROLES[i]; return null; }
     roleSel.addEventListener("change", function () {
@@ -340,27 +346,34 @@ HTML_JS = r"""
       proj.value = (rp && rp.project) || r.project || r.label; proj.setAttribute("readonly", "readonly"); proj.dataset.auto = "1";
       var first = -1, last = -1, h = 0;
       c.GRID.weeks.forEach(function (w, i) { if ((r.hrs[w] || 0) > 0) { if (first < 0) first = i; last = i; h = Math.max(h, r.hrs[w]); } });
-      if (first >= 0) { from.value = String(first); thru.value = String(last); }
+      if (first >= 0) from.value = String(first);
       if (h) hrs.value = String(Math.round(h));
+      endD.value = ""; endHint.textContent = "leave blank to run to the end of the role as set in NetSuite";
     });
+    roleSel.addEventListener("change", function () { if (!roleByKey(roleSel.value)) { endD.value = fridayOf(c.GRID.weeks.length - 1); endHint.textContent = "the assignment's last day"; } });
     sec.appendChild(f);
     var act = el("div", "cm-actions"), st = el("div", "cm-status");
     var go = el("button", "cm-btn cm-primary", live.ok ? (live.dry ? "Check in NetSuite (dry run)" : "Allocate in NetSuite") : "Allocate in NetSuite"); go.type = "button"; go.disabled = !live.ok;
     go.addEventListener("click", function () {
       var pr = (proj.value || "").trim(), h = parseFloat(hrs.value) || 0;
-      var i0 = parseInt(from.value, 10), i1 = parseInt(thru.value, 10); if (i1 < i0) { var t = i0; i0 = i1; i1 = t; }
+      var i0 = parseInt(from.value, 10), r = roleByKey(roleSel.value), rl = r ? r.label : "";
+      var end = (endD.value || "").trim();
       if (!pr) { proj.focus(); return; } if (!(h > 0)) { hrs.focus(); return; }
-      var weeks = []; for (var i = i0; i <= i1; i++) { var w = c.weekISO(i); if (w) weeks.push(w); }
-      var r = roleByKey(roleSel.value), rl = r ? r.label : "";
+      if (!end && !r) { endD.focus(); status(st, "Give the assignment an end date.", "err"); return; }
+      if (end && end < c.weekISO(i0)) { endD.focus(); status(st, "The end date is before the first week.", "err"); return; }
+      // weeks = the grid weeks from the first week up to the end date (the server extends to the end date / the role's end)
+      var weeks = []; for (var i = i0; i < c.GRID.weeks.length; i++) { var w = c.weekISO(i); if (w && (!end || w <= end)) weeks.push(w); }
+      if (!weeks.length) weeks.push(c.weekISO(i0));
       go.disabled = true; status(st, "Writing to NetSuite…", null);
       post({ consultant: cur.name, project: pr, roleKey: roleSel.value || "", roleLabel: rl, roleTitle: rl ? rl.slice(rl.indexOf(": ") + 2) : "",
-             hours: h, weeks: weeks, note: (note.value || "").trim(), key: cur.key, label: cur.name, author: c.author(), week: c.THIS_WEEK, fillOpenRole: !!rl })
+             hours: h, weeks: weeks, endDate: end || undefined, note: (note.value || "").trim(), key: cur.key, label: cur.name, author: c.author(), week: c.THIS_WEEK, fillOpenRole: !!rl })
       .then(function (j) {
         go.disabled = false;
         if (j.ok) {
           var ns = j.netsuite || {};
           var line = cur.name + " → " + (ns.projectName || pr) + ", " + h + " hrs/wk (" + (ns.percentOfTime || "") + "%), " + ns.startDate + " to " + ns.endDate
-            + (ns.allocationId ? " · allocation " + ns.allocationId : "") + (ns.openRole && ns.openRole.action !== "none" ? " · open role " + ns.openRole.action : "");
+            + (ns.allocationId ? " · allocation " + ns.allocationId : "") + (ns.openRole && ns.openRole.action === "filled" ? " · filled open role “" + ns.openRole.title + "”"
+               : ns.openRole && ns.openRole.action !== "none" ? " · open role " + ns.openRole.action : "");
           status(st, (j.dryRun ? "Dry run OK - " : "Done - ") + line, "ok");
           tagRow(cur.row, j.dryRun ? "dry run" : "changed in NetSuite");
           c.note(cur.key, (j.dryRun ? "NetSuite dry run OK: " : "Allocated in NetSuite: ") + line + ((note.value || "").trim() ? " - " + note.value.trim() : ""));

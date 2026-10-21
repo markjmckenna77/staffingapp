@@ -5,7 +5,9 @@
 //                                                 Resource Allocations in NetSuite (the consultant modal)
 //   POST  either { allocationId }                 push an existing proposed allocation or removal
 //         or     { consultant, project, hours, weeks, roleKey?, roleLabel?, roleTitle?, projectId?,
-//                  note?, key?, label?, author?, week?, fillOpenRole? }
+//                  endDate?, note?, key?, label?, author?, week?, fillOpenRole? }
+//                                                 endDate = how long the assignment runs (ISO); when absent a
+//                                                 fill runs to the open role's own end date in NetSuite
 //                                                 record it in the allocations collection and push it
 //         or     { kind: "remove", consultant, project, weeks, hours?, projectId?, note?, key?, label?,
 //                  author?, week? }               take the consultant off the project for those weeks
@@ -59,7 +61,7 @@ type AllocDoc = {
   kind: "add" | "remove"; consultant: string; project: string; projectId?: number;
   roleKey: string; roleLabel: string; roleTitle: string; hours: number; weeks: string[];
   status: string; note: string; key: string; label: string; author: string; ts: number; week: string;
-  fillOpenRole?: boolean;
+  fillOpenRole?: boolean; endDate?: string;
 };
 
 function roleTitleOf(label: string): string {
@@ -152,6 +154,7 @@ export async function POST(req: Request) {
         key: String(b.key ?? ""), label: String(b.label ?? ""), author: String(b.author ?? who),
         ts: Date.now(), week: String(b.week ?? weeks[0]),
         fillOpenRole: b.fillOpenRole === undefined ? !!roleLabel : !!b.fillOpenRole,
+        endDate: /^\d{4}-\d{2}-\d{2}$/.test(String(b.endDate ?? "")) ? String(b.endDate) : undefined,
       };
       const doc = await addDoc("allocations", a as unknown as Record<string, unknown>, who);
       id = doc.id;
@@ -175,7 +178,7 @@ export async function POST(req: Request) {
 
     const result = await createAllocation({
       consultant: a.consultant, project: a.project, projectId: a.projectId, roleTitle: a.roleTitle || undefined,
-      hours: a.hours, weeks: a.weeks, note: a.note, fillOpenRole: a.fillOpenRole ?? !!a.roleTitle, requestedBy: a.author || who,
+      hours: a.hours, weeks: a.weeks, endDate: a.endDate, note: a.note, fillOpenRole: a.fillOpenRole ?? !!a.roleTitle, requestedBy: a.author || who,
     });
 
     const patch: Record<string, unknown> = result.dryRun

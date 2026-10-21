@@ -139,8 +139,8 @@ js = must_replace('''      hint.textContent = rem
             + "shows them freed, and it stays on the Proposed allocations list until someone enters it in NetSuite.")
         : live
           ? (ALLOC.dryRun ? "Dry run: NetSuite is checked (consultant, project, open role) but nothing is written yet. "
-             : "Creates the Resource Allocation in NetSuite now - the system of record - and retires the open role's "
-               + "generic allocation it fills. ")
+             : "Writes to NetSuite now - the system of record. Filling an open role puts the consultant on that role's "
+               + "own allocation (nothing new is created); any other project gets a new Resource Allocation. ")
             + "Snowflake and this dashboard pick it up on the next Fivetran sync and dbt build; until then it shows "
             + "here as entered."
           : (ALLOC.configured ? "Only approvers can write to NetSuite; " : "NetSuite isn't connected to the app yet; ")
@@ -186,7 +186,8 @@ NEW_CLICK = '''      var weeks = GRID.weeks.slice(i0, i1 + 1);
             addComment(key, (j.dryRun ? "NetSuite dry run OK: " : "Allocated in NetSuite: ") + cons + " \\u2192 " + (ns.projectName || proj)
               + ", " + h + " hrs/wk (" + (ns.percentOfTime || "") + "%), " + ns.startDate + " to " + ns.endDate
               + (ns.allocationId ? " \\u00b7 allocation " + ns.allocationId : "")
-              + (ns.openRole && ns.openRole.action !== "none" ? " \\u00b7 open role " + ns.openRole.action : "")
+              + (ns.openRole && ns.openRole.action === "filled" ? " \\u00b7 filled open role \\u201c" + ns.openRole.title + "\\u201d"
+                 : ns.openRole && ns.openRole.action !== "none" ? " \\u00b7 open role " + ns.openRole.action : "")
               + ((note.value || "").trim() ? " - " + note.value.trim() : ""), "action");
             formOpen = null; renderDrawer();
           } else if (j.error === "netsuite_not_configured") {
@@ -194,7 +195,8 @@ NEW_CLICK = '''      var weeks = GRID.weeks.slice(i0, i1 + 1);
             flashDrawerError("Saved as a proposal - NetSuite isn't connected yet.");
           } else {
             var d = j.detail && typeof j.detail === "object" ? JSON.stringify(j.detail) : (j.detail || "");
-            flashDrawerError("NetSuite refused (" + (j.error === "netsuite_allocation_not_found" ? "no allocation of theirs on that project in those weeks" : (j.error || j.__status)) + ")"
+            flashDrawerError("NetSuite refused (" + (j.error === "netsuite_allocation_not_found" ? "no allocation of theirs on that project in those weeks"
+              : j.error === "netsuite_open_role_not_found" ? "no open role with that title on the project in NetSuite - nothing was written" : (j.error || j.__status)) + ")"
               + (d ? ": " + String(d).slice(0, 300) : "") + (j.id ? " - kept as a proposal." : ""));
             syncKind();
           }
