@@ -335,14 +335,21 @@ export async function removeAllocation(a: NsRemovalInput): Promise<NsRemovalResu
   const why = a.note?.trim() ? ` - ${a.note.trim()}` : "";
   const result: NsRemovalResult = { dryRun, employeeId: emp.id, employeeName: emp.name, projectId: proj.id, projectName: proj.name,
     startDate: from, endDate: to, actions: [] };
+  await trimRange(emp, proj, allocs, from, to, stamp, why, dryRun, result.actions);
+  return result;
+}
 
+/** Trim every allocation in `allocs` so none of it falls inside [from, to] (see removeAllocation). */
+async function trimRange(emp: { id: number }, proj: { id: number }, allocs: EmpAlloc[], from: string, to: string,
+                         stamp: string, why: string, dryRun: boolean, actions: NsRemovalAction[]): Promise<void> {
   for (const al of allocs) {
+    if (al.enddate < from || al.startdate > to) continue;
     const was = { startDate: al.startdate, endDate: al.enddate, percentOfTime: al.percentoftime, numberHours: al.numberhours, unit: al.allocationunit };
     const before = al.startdate < from, after = al.enddate > to;
     const act: NsRemovalAction = { allocationId: al.id, was, action: before && after ? "split" : before ? "ended" : after ? "started_later" : "deleted" };
     if (act.action === "ended" || act.action === "split") act.endDate = addDays(from, -1);
     if (act.action === "started_later") act.startDate = addDays(to, 1);
-    result.actions.push(act);
+    actions.push(act);
     if (dryRun) continue;
 
     const note = `${stamp}: removed ${from} to ${to}${why}\r\n${al.notes}`.slice(0, 3900);
@@ -369,6 +376,168 @@ export async function removeAllocation(a: NsRemovalInput): Promise<NsRemovalResu
       const idm = /\/resourceAllocation\/(\d+)/.exec(created.headers.get("location") ?? "");
       if (idm) act.tailAllocationId = Number(idm[1]);
     }
+  }
+}
+
+// ---- the consultant modal (Mark, Oct 21 2026): list, edit, reshape -------------------------
+
+export type NsAllocationRow = {
+  allocationId: number; projectId: number; project: string; startDate: string; endDate: string;
+  unit: string; percentOfTime: number; numberHours: number; hoursPerWeek: number; role: string; type: string;
+};
+
+function weeksBetween(start: string, end: string): number {
+  const a = new Date(start + "T00:00:00Z").getTime(), b = new Date(end + "T00:00:00Z").getTime();
+  return Math.max(1, Math.round((b - a) / 86400000 / 7 + 0.5));
+}
+function hoursPerWeekOf(al: { allocationunit: string; percentoftime: number; numberhours: number; startdate: string; enddate: string }): number {
+  if ((al.allocationunit || "P") === "H") return Math.round(al.numberhours / weeksBetween(al.startdate, al.enddate) * 10) / 10;
+  return Math.round(al.percentoftime * 40 / 100 * 10) / 10;
+}
+
+/** Every Resource Allocation of the consultant's that ends on or after `from` (default today). */
+export async function listAllocations(consultant: string, from?: string): Promise<{ employeeId: number; employeeName: string; allocations: NsAllocationRow[] }> {
+  if (!netsuiteConfigured()) throw nerr("netsuite_not_configured");
+  const emp = await findEmployee(consultant);
+  const since = from && /^\d{4}-\d{2}-\d{2}$/.test(from) ? from : today();
+  const rows = await suiteql(
+    `SELECT ra.id, ra.project, j.companyname, ra.startdate, ra.enddate, ra.percentoftime, ra.numberhours, ra.allocationunit, ` +
+    `ra.allocationtype, ra.${F.roleField} AS role FROM resourceallocation ra JOIN job j ON j.id = ra.project ` +
+    `WHERE ra.allocationresource = ${emp.id} AND ra.enddate >= TO_DATE('${since}', 'YYYY-MM-DD') ORDER BY ra.startdate, j.companyname`);
+  const allocations = rows.map((r) => {
+    const al = { allocationunit: String(r.allocationunit ?? ""), percentoftime: Number(r.percentoftime ?? 0), numberhours: Number(r.numberhours ?? 0),
+      startdate: isoDate(String(r.startdate ?? "")), enddate: isoDate(String(r.enddate ?? "")) };
+    return {
+      allocationId: Number(r.id), projectId: Number(r.project), project: String(r.companyname ?? ""),
+      startDate: al.startdate, endDate: al.enddate, unit: al.allocationunit || "P", percentOfTime: al.percentoftime,
+      numberHours: al.numberhours, hoursPerWeek: hoursPerWeekOf(al), role: String(r.role ?? ""), type: String(r.allocationtype ?? ""),
+    };
+  });
+  return { employeeId: emp.id, employeeName: emp.name, allocations };
+}
+
+export type NsUpdateInput = {
+  consultant: string; allocationId: number;
+  startDate?: string; endDate?: string; hoursPerWeek?: number;   // any subset; a window that closes deletes the record
+  note?: string; requestedBy?: string;
+};
+export type NsUpdateResult = {
+  dryRun: boolean; allocationId: number; action: "updated" | "deleted" | "unchanged";
+  was: NsAllocationRow; now: { startDate: string; endDate: string; hoursPerWeek: number };
+};
+
+/** Change one allocation's dates and/or weekly hours (an entire allocation at once). */
+export async function updateAllocation(a: NsUpdateInput): Promise<NsUpdateResult> {
+  if (!netsuiteConfigured()) throw nerr("netsuite_not_configured");
+  const dryRun = netsuiteDryRun();
+  const listed = await listAllocations(a.consultant, "2000-01-01");
+  const was = listed.allocations.find((x) => x.allocationId === a.allocationId);
+  if (!was) throw nerr("netsuite_allocation_not_found", { consultant: listed.employeeName, allocationId: a.allocationId });
+  const startDate = a.startDate && /^\d{4}-\d{2}-\d{2}$/.test(a.startDate) ? a.startDate : was.startDate;
+  const endDate = a.endDate && /^\d{4}-\d{2}-\d{2}$/.test(a.endDate) ? a.endDate : was.endDate;
+  const hoursPerWeek = a.hoursPerWeek !== undefined && a.hoursPerWeek >= 0 ? a.hoursPerWeek : was.hoursPerWeek;
+  const stamp = `${today()} staffing dashboard${a.requestedBy ? ` (${a.requestedBy})` : ""}`;
+  const why = a.note?.trim() ? ` - ${a.note.trim()}` : "";
+  const result: NsUpdateResult = { dryRun, allocationId: was.allocationId, action: "unchanged", was, now: { startDate, endDate, hoursPerWeek } };
+  if (endDate < startDate || hoursPerWeek === 0) {
+    result.action = "deleted";
+    if (!dryRun) await ns("DELETE", `/services/rest/record/v1/resourceAllocation/${was.allocationId}`);
+    return result;
+  }
+  const body: Record<string, unknown> = {};
+  if (startDate !== was.startDate) body.startDate = startDate;
+  if (endDate !== was.endDate) body.endDate = endDate;
+  if (Math.abs(hoursPerWeek - was.hoursPerWeek) >= 0.05) {
+    body.allocationUnit = { id: "P" };
+    body.percentOfTime = Math.min(100, Math.round(hoursPerWeek / 40 * 1000) / 10);
+  }
+  if (Object.keys(body).length === 0) return result;
+  result.action = "updated";
+  if (!dryRun) {
+    const cur = await ns<{ notes?: string }>("GET", `/services/rest/record/v1/resourceAllocation/${was.allocationId}?fields=notes`).catch(() => ({ data: { notes: "" } as { notes?: string }, headers: new Headers() }));
+    body.notes = `${stamp}: ${startDate} to ${endDate}, ${hoursPerWeek} hrs/wk (was ${was.startDate} to ${was.endDate}, ${was.hoursPerWeek} hrs/wk)${why}\r\n${cur.data?.notes ?? ""}`.slice(0, 3900);
+    await ns("PATCH", `/services/rest/record/v1/resourceAllocation/${was.allocationId}`, body);
+  }
+  return result;
+}
+
+export type NsReshapeInput = {
+  consultant: string; project: string; projectId?: number;
+  weeks: { week: string; hours: number }[];   // the desired hours/week for each Monday in the grid window
+  note?: string; requestedBy?: string;
+};
+export type NsReshapeResult = {
+  dryRun: boolean; employeeId: number; employeeName: string; projectId: number; projectName: string;
+  changed: { week: string; from: number; to: number }[];
+  trimmed: NsRemovalAction[];
+  created: { allocationId?: number; startDate: string; endDate: string; hoursPerWeek: number; percentOfTime: number }[];
+};
+
+/**
+ * Week-by-week edits from the 8 Week Outlook. The desired hours per week are compared with what
+ * NetSuite currently has for the consultant on that project; only the weeks that differ are
+ * rewritten - their existing coverage is trimmed (trimRange) and new allocations are created for
+ * each run of equal non-zero hours. Weeks outside the grid, and weeks left as they are, keep
+ * their existing records.
+ */
+export async function reshapeWeeks(a: NsReshapeInput): Promise<NsReshapeResult> {
+  if (!netsuiteConfigured()) throw nerr("netsuite_not_configured");
+  if (!a.weeks?.length) throw nerr("bad_body", "no weeks");
+  const dryRun = netsuiteDryRun();
+  const weeks = a.weeks.filter((w) => /^\d{4}-\d{2}-\d{2}$/.test(w.week)).sort((x, y) => (x.week < y.week ? -1 : 1));
+  const from = weeks[0].week, to = addDays(weeks[weeks.length - 1].week, 4);
+  const emp = await findEmployee(a.consultant);
+  const proj = await findProject(a.project, a.projectId);
+  let allocs = await findEmployeeAllocations(emp.id, proj.id, from, to);
+  const stamp = `${today()} staffing dashboard${a.requestedBy ? ` (${a.requestedBy})` : ""}`;
+  const why = a.note?.trim() ? ` - ${a.note.trim()}` : "";
+  const result: NsReshapeResult = { dryRun, employeeId: emp.id, employeeName: emp.name, projectId: proj.id, projectName: proj.name,
+    changed: [], trimmed: [], created: [] };
+
+  // current hours per week from NetSuite
+  const current = weeks.map((w) => {
+    const wEnd = addDays(w.week, 4);
+    return allocs.filter((al) => al.startdate <= wEnd && al.enddate >= w.week).reduce((h, al) => h + hoursPerWeekOf(al), 0);
+  });
+  const diff = weeks.map((w, i) => Math.abs(w.hours - current[i]) >= 0.5);
+  if (!diff.some(Boolean)) return result;
+  weeks.forEach((w, i) => { if (diff[i]) result.changed.push({ week: w.week, from: Math.round(current[i] * 10) / 10, to: w.hours }); });
+
+  // contiguous ranges of changed weeks
+  let i = 0;
+  while (i < weeks.length) {
+    if (!diff[i]) { i++; continue; }
+    let j = i;
+    while (j + 1 < weeks.length && diff[j + 1]) j++;
+    const rFrom = weeks[i].week, rTo = addDays(weeks[j].week, 4);
+    await trimRange(emp, proj, allocs, rFrom, rTo, stamp, why, dryRun, result.trimmed);
+    if (!dryRun) allocs = await findEmployeeAllocations(emp.id, proj.id, from, to);   // ids and dates moved
+    // runs of equal non-zero desired hours inside the range
+    let k = i;
+    while (k <= j) {
+      const h = weeks[k].hours;
+      let m = k;
+      while (m + 1 <= j && Math.abs(weeks[m + 1].hours - h) < 0.05) m++;
+      if (h > 0) {
+        const startDate = weeks[k].week, endDate = addDays(weeks[m].week, 4);
+        const percentOfTime = Math.min(100, Math.round(h / 40 * 1000) / 10);
+        const row = { startDate, endDate, hoursPerWeek: h, percentOfTime } as NsReshapeResult["created"][number];
+        result.created.push(row);
+        if (!dryRun) {
+          const body: Record<string, unknown> = {
+            allocationResource: { id: String(emp.id) }, project: { id: String(proj.id) }, startDate, endDate,
+            allocationType: { id: F.hardTypeId }, allocationUnit: { id: "P" }, percentOfTime,
+            notes: `${stamp}: ${h} hrs/wk ${startDate} to ${endDate} (week-by-week edit)${why}`.slice(0, 3900),
+          };
+          if (process.env.NS_REQUESTED_BY_ID) body.requestedBy = { id: process.env.NS_REQUESTED_BY_ID };
+          const created = await ns<unknown>("POST", "/services/rest/record/v1/resourceAllocation", body);
+          const idm = /\/resourceAllocation\/(\d+)/.exec(created.headers.get("location") ?? "");
+          if (idm) row.allocationId = Number(idm[1]);
+        }
+      }
+      k = m + 1;
+    }
+    i = j + 1;
   }
   return result;
 }

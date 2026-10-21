@@ -981,7 +981,7 @@ tr.util-org-row td { color: var(--text-secondary); padding-top: 4px; padding-bot
 #roles-table button.role-toggle.role-head-toggle { display: inline-flex; align-items: flex-start; gap: 7px; width: auto;
   background: none; border: 0; padding: 0; margin: 0; font: inherit; color: inherit; cursor: pointer; text-align: left; }
 #roles-table button.role-toggle.role-head-toggle .pj-caret { flex: none; margin-top: 4px; }
-#roles-table button.role-toggle.role-head-toggle .role-text { display: flex; flex-direction: column; gap: 1px; }
+#roles-table .role-hint { margin-left: 15px; }
 #roles-table button.role-toggle.role-head-toggle .role-title { text-decoration: none; }
 #roles-table button.role-toggle.role-head-toggle:hover .role-title { color: var(--accent); }
 #roles-table button.role-toggle.role-head-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
@@ -1021,6 +1021,54 @@ h2.sec-head.sec-toggle:focus-visible { outline: 2px solid var(--accent); outline
 .sec-collapsed > :not(h2.sec-head) { display: none !important; }
 .sec-collapsed > h2.sec-head { margin-bottom: -18px !important; border-radius: 9px !important; }
 .agenda-panel.sec-collapsed > h2.sec-head { margin-bottom: -14px !important; }
+/* ---- Oct 21 2026 (Mark): consultant modal, opened from the 8 Week Outlook names */
+#staff-grid td.grid-name { cursor: pointer; }
+#staff-grid td.grid-name:hover { color: var(--accent); text-decoration: underline; text-decoration-style: dotted; }
+#staff-grid td.grid-name .cm-tag { display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 8px; font-size: 9.5px; font-weight: 600;
+  background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); vertical-align: 1px; text-decoration: none; }
+#cm-scrim { position: fixed; inset: 0; background: rgba(0,0,0,0.38); z-index: 60; }
+#cm-modal { position: fixed; top: 4vh; left: 50%; transform: translateX(-50%); width: min(1080px, 96vw); max-height: 92vh; overflow: auto;
+  background: var(--surface-1); color: var(--text-primary); border: 1px solid var(--gridline); border-radius: 12px; box-shadow: 0 18px 50px rgba(0,0,0,0.3);
+  z-index: 61; font-size: 12.5px; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+#cm-modal[hidden], #cm-scrim[hidden] { display: none; }
+.cm-head { display: flex; align-items: baseline; gap: 12px; padding: 14px 18px 10px; border-bottom: 1px solid var(--gridline); position: sticky; top: 0; background: var(--surface-1); z-index: 2; }
+.cm-head h3 { margin: 0; font-size: 17px; font-weight: 700; }
+.cm-head .cm-sub { color: var(--text-secondary); font-size: 12px; }
+.cm-close { margin-left: auto; background: none; border: 0; font-size: 20px; line-height: 1; cursor: pointer; color: var(--text-secondary); }
+.cm-close:hover { color: var(--accent); }
+.cm-body { padding: 6px 18px 18px; }
+.cm-sec { margin-top: 14px; }
+.cm-sec h4 { margin: 0 0 6px; font-size: 11.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-secondary); }
+.cm-sec .cm-why { font-size: 11.5px; color: var(--text-secondary); margin: 0 0 8px; }
+.cm-grid { width: 100%; border-collapse: collapse; }
+.cm-grid th, .cm-grid td { padding: 4px 6px; border-bottom: 1px solid var(--gridline); text-align: center; font-variant-numeric: tabular-nums; }
+.cm-grid th { font-size: 10.5px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.03em; }
+.cm-grid td:first-child, .cm-grid th:first-child { text-align: left; }
+.cm-grid td.cm-proj { font-weight: 600; max-width: 300px; }
+.cm-grid input[type=number] { width: 54px; padding: 3px 4px; text-align: right; border: 1px solid var(--gridline); border-radius: 5px; background: var(--surface-page); color: var(--text-primary); font: inherit; }
+.cm-grid input[type=date] { padding: 3px 4px; border: 1px solid var(--gridline); border-radius: 5px; background: var(--surface-page); color: var(--text-primary); font: inherit; font-size: 11.5px; }
+.cm-grid input.cm-changed { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.cm-grid tr.cm-total td { font-weight: 700; border-bottom: none; }
+.cm-grid .cm-pct { color: var(--text-secondary); font-size: 10.5px; }
+.cm-row-actions { white-space: nowrap; }
+.cm-btn { padding: 5px 11px; border-radius: 6px; border: 1px solid var(--gridline); background: var(--surface-page); color: var(--text-primary); font: inherit; font-size: 12px; cursor: pointer; }
+.cm-btn:hover { border-color: var(--accent); color: var(--accent); }
+.cm-btn.cm-primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.cm-btn.cm-primary:hover { color: #fff; filter: brightness(1.08); }
+.cm-btn.cm-danger:hover { border-color: var(--status-critical); color: var(--status-critical); }
+.cm-btn[disabled] { opacity: 0.5; cursor: default; }
+.cm-btn.cm-sm { padding: 2px 8px; font-size: 11px; }
+.cm-actions { display: flex; align-items: center; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+.cm-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px 12px; align-items: end; }
+.cm-form label { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: var(--text-secondary); }
+.cm-form input, .cm-form select { padding: 5px 6px; border: 1px solid var(--gridline); border-radius: 6px; background: var(--surface-page); color: var(--text-primary); font: inherit; font-size: 12px; }
+.cm-form .cm-wide { grid-column: 1 / -1; }
+.cm-status { margin-top: 8px; font-size: 12px; color: var(--text-secondary); min-height: 1.2em; }
+.cm-status.cm-err { color: var(--status-critical); }
+.cm-status.cm-ok { color: var(--status-good); }
+.cm-log { margin: 6px 0 0; padding-left: 18px; font-size: 11.5px; color: var(--text-secondary); }
+.cm-note { font-size: 11.5px; color: var(--muted-ink); font-style: italic; }
+.cm-muted { color: var(--muted-ink); }
 </style>
 
 <div class="viz-root">
@@ -1340,22 +1388,22 @@ h2.sec-head.sec-toggle:focus-visible { outline: 2px solid var(--accent); outline
       <div class="outlook-scroll"><table class="outlook-table staff-grid" id="roles-table">
 <thead><tr><th>Open role</th><th class="wk">Oct 19</th><th class="wk">Oct 26</th><th class="wk">Nov 2</th><th class="wk">Nov 9</th><th class="wk">Nov 16</th><th class="wk">Nov 23</th><th class="wk">Nov 30</th><th class="wk">Dec 7</th></tr></thead>
 <tbody>
-        <tr data-role-id="or3" data-ct-key="r:doordash-inc-doordash-ai-engineering-nikita-backfill-cti-sr-ai-engineer" data-ct-kind="role" data-ct-label="DoorDash, Inc.: Nikita backfill-CTI Sr AI Engineer" class="demand-main role-row" data-geo="us"><td class="col-demand-name"><div class="demand-role"><button type="button" class="role-toggle role-head-toggle" aria-expanded="false" data-role="or3"><span class="pj-caret"></span><span class="role-text"><span class="role-title">DoorDash, Inc.: Nikita backfill-CTI Sr AI Engineer</span><span class="role-hint">suggestions &amp; allocations</span></span></button></div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Oct 19: no demand">&mdash;</div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Oct 26: no demand">&mdash;</div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Nov 2: no demand">&mdash;</div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Nov 9: no demand">&mdash;</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Nov 16: DoorDash, Inc.: Nikita backfill-CTI Sr AI Engineer (40h/wk)">40</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="32" title="Nov 23: DoorDash, Inc.: Nikita backfill-CTI Sr AI Engineer (32h/wk)">32</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Nov 30: DoorDash, Inc.: Nikita backfill-CTI Sr AI Engineer (40h/wk)">40</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Dec 7: DoorDash, Inc.: Nikita backfill-CTI Sr AI Engineer (40h/wk)">40</div></td></tr>
+        <tr data-role-id="or3" data-ct-key="r:doordash-inc-doordash-ai-engineering-nikita-backfill-cti-sr-ai-engineer" data-ct-kind="role" data-ct-label="DoorDash, Inc.: Nikita backfill-CTI Sr AI Engineer" class="demand-main role-row" data-geo="us"><td class="col-demand-name"><div class="demand-role"><button type="button" class="role-toggle role-head-toggle" aria-expanded="false" data-role="or3"><span class="pj-caret"></span><span class="role-title">DoorDash, Inc.: Nikita backfill-CTI Sr AI Engineer</span></button></div><div class="role-hint">suggestions &amp; allocations</div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Oct 19: no demand">&mdash;</div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Oct 26: no demand">&mdash;</div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Nov 2: no demand">&mdash;</div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Nov 9: no demand">&mdash;</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Nov 16: DoorDash, Inc.: Nikita backfill-CTI Sr AI Engineer (40h/wk)">40</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="32" title="Nov 23: DoorDash, Inc.: Nikita backfill-CTI Sr AI Engineer (32h/wk)">32</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Nov 30: DoorDash, Inc.: Nikita backfill-CTI Sr AI Engineer (40h/wk)">40</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Dec 7: DoorDash, Inc.: Nikita backfill-CTI Sr AI Engineer (40h/wk)">40</div></td></tr>
         <tr class="role-update demand-sub has-sub" data-geo="us"><td colspan="9"><div class="demand-update"><div class="demand-meta"><b>Hiring manager:</b> Sean Sandlin &middot; <b>Type:</b> FTE &middot; <b>Recruiter:</b> Nagendra Ponna &middot; <b>Target start:</b> 11/16/2026 &middot; <b>Open:</b> 20d</div><b>Recruiting Update:</b> 10/16: Waiting on client to meet candidate. Interview back ups. SD has been pushed out due to client delays<details class="demand-history"><summary>5 earlier updates</summary><ul><li>10/14– Client review.</li><li>10/0: presenting candidate to client on 10/12</li><li>10/06-We have one call 10/06 and one for tomorrow (technical calls) and left one more candidate for screening</li><li>10/5: 1 candidate interviewing. have not gotten commit form client to backfill.</li><li>9/28. Let Nikita go due to poor performance. re-opening for backfill. Hire in Hyderabad for more oversight</li></ul></details><div class="demand-skills"><b>Skills needed:</b> Python, GenAI / LLM applications, AI/ML engineering</div></div></td></tr>
         <tr hidden data-role-parent="or3" data-ct-key="r:doordash-inc-doordash-ai-engineering-nikita-backfill-cti-sr-ai-engineer" class="role-detail demand-sub fits-row has-sub" data-geo="us"><td colspan="9"><div class="demand-fits"><b>Suggested from current staff:</b><ul class="fit-list"><li class="fit-card"><span class="fit-rank">1</span><span class="fit-name">Dillon Mullis</span><span class="fit-score fit-cover-part" title="Match score out of 100: availability 40, client history 20, skills 25, practice 10, job level 5">65</span><span class="fit-whys"><span class="fit-why">Javascript 5/5, Powershell (Microsoft) 5/5, Windows Command Line 5/5</span><span class="fit-why">Senior Software Engineer</span><span class="fit-why">36 free hrs/wk of 40 needed · 12% booked Nov 16–Dec 7</span></span><button type="button" class="alloc-btn" data-cons="Dillon Mullis" title="Allocate Dillon Mullis to this role in NetSuite">Allocate</button></li><li class="fit-card"><span class="fit-rank">2</span><span class="fit-name">Brian Bailey</span><span class="fit-score fit-cover-thin" title="Match score out of 100: availability 40, client history 20, skills 25, practice 10, job level 5">52</span><span class="fit-whys"><span class="fit-why">AI/ML &amp; Data Science 5/5, Python 5/5</span><span class="fit-why">Senior AI Consultant</span><span class="fit-why">13 free hrs/wk of 40 needed · 78% booked Nov 16–Dec 7</span></span><button type="button" class="alloc-btn" data-cons="Brian Bailey" title="Allocate Brian Bailey to this role in NetSuite">Allocate</button></li><li class="fit-card"><span class="fit-rank">3</span><span class="fit-name">Sean Sandlin</span><span class="fit-score fit-cover-part" title="Match score out of 100: availability 40, client history 20, skills 25, practice 10, job level 5">48</span><span class="fit-whys"><span class="fit-why">Python 5/5</span><span class="fit-why">Team Lead, Software Engineering</span><span class="fit-why">22 free hrs/wk of 40 needed · 55% booked Nov 16–Dec 7</span></span><button type="button" class="alloc-btn" data-cons="Sean Sandlin" title="Allocate Sean Sandlin to this role in NetSuite">Allocate</button></li></ul><div class="alloc-other"><button type="button" class="alloc-btn alloc-btn-other">Allocate someone else&hellip;</button></div></div></td></tr>
-        <tr data-role-id="or0" data-ct-key="r:boston-scientific-bsc-finops-data-engineering-us-de-snowflake-streamlit" data-ct-kind="role" data-ct-label="Boston Scientific: US DE Snowflake/Streamlit" class="demand-main role-row" data-geo="us"><td class="col-demand-name"><div class="demand-role"><button type="button" class="role-toggle role-head-toggle" aria-expanded="false" data-role="or0"><span class="pj-caret"></span><span class="role-text"><span class="role-title">Boston Scientific: US DE Snowflake/Streamlit</span><span class="role-hint">suggestions &amp; allocations</span></span></button></div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Oct 19: no demand">&mdash;</div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Oct 26: no demand">&mdash;</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Nov 2: Boston Scientific: US DE Snowflake/Streamlit (40h/wk)">40</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Nov 9: Boston Scientific: US DE Snowflake/Streamlit (40h/wk)">40</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Nov 16: Boston Scientific: US DE Snowflake/Streamlit (40h/wk)">40</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="32" title="Nov 23: Boston Scientific: US DE Snowflake/Streamlit (32h/wk)">32</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Nov 30: Boston Scientific: US DE Snowflake/Streamlit (40h/wk)">40</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Dec 7: Boston Scientific: US DE Snowflake/Streamlit (40h/wk)">40</div></td></tr>
+        <tr data-role-id="or0" data-ct-key="r:boston-scientific-bsc-finops-data-engineering-us-de-snowflake-streamlit" data-ct-kind="role" data-ct-label="Boston Scientific: US DE Snowflake/Streamlit" class="demand-main role-row" data-geo="us"><td class="col-demand-name"><div class="demand-role"><button type="button" class="role-toggle role-head-toggle" aria-expanded="false" data-role="or0"><span class="pj-caret"></span><span class="role-title">Boston Scientific: US DE Snowflake/Streamlit</span></button></div><div class="role-hint">suggestions &amp; allocations</div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Oct 19: no demand">&mdash;</div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Oct 26: no demand">&mdash;</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Nov 2: Boston Scientific: US DE Snowflake/Streamlit (40h/wk)">40</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Nov 9: Boston Scientific: US DE Snowflake/Streamlit (40h/wk)">40</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Nov 16: Boston Scientific: US DE Snowflake/Streamlit (40h/wk)">40</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="32" title="Nov 23: Boston Scientific: US DE Snowflake/Streamlit (32h/wk)">32</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Nov 30: Boston Scientific: US DE Snowflake/Streamlit (40h/wk)">40</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Dec 7: Boston Scientific: US DE Snowflake/Streamlit (40h/wk)">40</div></td></tr>
         <tr class="role-update demand-sub has-sub" data-geo="us"><td colspan="9"><div class="demand-update"><b>Recruiting Update:</b> <i>Considering filling this role with existing staff. Not recruiting externally yet.</i><div class="demand-skills"><b>Skills needed:</b> Snowflake, Data engineering, SQL, Python (ETL)</div></div></td></tr>
         <tr hidden data-role-parent="or0" data-ct-key="r:boston-scientific-bsc-finops-data-engineering-us-de-snowflake-streamlit" class="role-detail demand-sub fits-row has-sub" data-geo="us"><td colspan="9"><div class="demand-fits"><b>Suggested from current staff:</b><ul class="fit-list"><li class="fit-card"><span class="fit-rank">1</span><span class="fit-name">Gracjan Harasim</span><span class="fit-score fit-cover-full" title="Match score out of 100: availability 40, client history 20, skills 25, practice 10, job level 5">49</span><span class="fit-whys"><span class="fit-why">no skills-matrix entry</span><span class="fit-why">Senior Data Management Consultant</span><span class="fit-why">40 free hrs/wk of 40 needed · 0% booked Nov 2–Dec 7</span></span><button type="button" class="alloc-btn" data-cons="Gracjan Harasim" title="Allocate Gracjan Harasim to this role in NetSuite">Allocate</button></li><li class="fit-card"><span class="fit-rank">2</span><span class="fit-name">Dillon Mullis</span><span class="fit-score fit-cover-part" title="Match score out of 100: availability 40, client history 20, skills 25, practice 10, job level 5">44</span><span class="fit-whys"><span class="fit-why">Senior Software Engineer</span><span class="fit-why">35 free hrs/wk of 40 needed · 13% booked Nov 2–Dec 7</span></span><button type="button" class="alloc-btn" data-cons="Dillon Mullis" title="Allocate Dillon Mullis to this role in NetSuite">Allocate</button></li><li class="fit-card"><span class="fit-rank">3</span><span class="fit-name">Matthew Ritchie</span><span class="fit-score fit-cover-thin" title="Match score out of 100: availability 40, client history 20, skills 25, practice 10, job level 5">43</span><span class="fit-whys"><span class="fit-why">Snowflake 5/5, Streamlit 4/5</span><span class="fit-why">Technical Lead, Data Management</span><span class="fit-why">13 free hrs/wk of 40 needed · 72% booked Nov 2–Dec 7</span></span><button type="button" class="alloc-btn" data-cons="Matthew Ritchie" title="Allocate Matthew Ritchie to this role in NetSuite">Allocate</button></li></ul><div class="alloc-other"><button type="button" class="alloc-btn alloc-btn-other">Allocate someone else&hellip;</button></div></div></td></tr>
-        <tr data-role-id="or1" data-ct-key="r:doordash-inc-doordash-data-engineering-resource-2-cti-sr-data-engineer-snowflake-dbt" data-ct-kind="role" data-ct-label="DoorDash, Inc.: CTI Sr Data Engineer Snowflake/dbt" class="demand-main role-row" data-geo="india"><td class="col-demand-name"><div class="demand-role"><button type="button" class="role-toggle role-head-toggle" aria-expanded="false" data-role="or1"><span class="pj-caret"></span><span class="role-text"><span class="role-title">DoorDash, Inc.: CTI Sr Data Engineer Snowflake/dbt</span><span class="role-hint">suggestions &amp; allocations</span></span></button></div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Oct 19: no demand">&mdash;</div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Oct 26: no demand">&mdash;</div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Nov 2: no demand">&mdash;</div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Nov 9: no demand">&mdash;</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Nov 16: DoorDash, Inc.: CTI Sr Data Engineer Snowflake/dbt (40h/wk)">40</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="32" title="Nov 23: DoorDash, Inc.: CTI Sr Data Engineer Snowflake/dbt (32h/wk)">32</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Nov 30: DoorDash, Inc.: CTI Sr Data Engineer Snowflake/dbt (40h/wk)">40</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Dec 7: DoorDash, Inc.: CTI Sr Data Engineer Snowflake/dbt (40h/wk)">40</div></td></tr>
+        <tr data-role-id="or1" data-ct-key="r:doordash-inc-doordash-data-engineering-resource-2-cti-sr-data-engineer-snowflake-dbt" data-ct-kind="role" data-ct-label="DoorDash, Inc.: CTI Sr Data Engineer Snowflake/dbt" class="demand-main role-row" data-geo="india"><td class="col-demand-name"><div class="demand-role"><button type="button" class="role-toggle role-head-toggle" aria-expanded="false" data-role="or1"><span class="pj-caret"></span><span class="role-title">DoorDash, Inc.: CTI Sr Data Engineer Snowflake/dbt</span></button></div><div class="role-hint">suggestions &amp; allocations</div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Oct 19: no demand">&mdash;</div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Oct 26: no demand">&mdash;</div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Nov 2: no demand">&mdash;</div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Nov 9: no demand">&mdash;</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Nov 16: DoorDash, Inc.: CTI Sr Data Engineer Snowflake/dbt (40h/wk)">40</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="32" title="Nov 23: DoorDash, Inc.: CTI Sr Data Engineer Snowflake/dbt (32h/wk)">32</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Nov 30: DoorDash, Inc.: CTI Sr Data Engineer Snowflake/dbt (40h/wk)">40</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Dec 7: DoorDash, Inc.: CTI Sr Data Engineer Snowflake/dbt (40h/wk)">40</div></td></tr>
         <tr class="role-update demand-sub has-sub" data-geo="india"><td colspan="9"><div class="demand-update"><div class="demand-meta"><b>Hiring manager:</b> Venkata &middot; <b>Type:</b> FTE &middot; <b>Recruiter:</b> Nagendra Ponna &middot; <b>Target start:</b> 11/16/2026 &middot; <b>Open:</b> 46d</div><b>Recruiting Update:</b> 10/16: waiting on client to respond on candidate meeting. Interviewing back ups. SD pushed due to client delays.<details class="demand-history"><summary>9 earlier updates</summary><ul><li>10/9: Korra Ranga is out. He could not commit to a start. 2 candidates interviewing.</li><li>10/06-Scheduled 2 technical calls and left one more candidate for screening</li><li>10/2: Korra has pushed SD out to 10/16. Meeting back ups</li><li>9/28: Korra needed to push SD due to employer notice. tentative 10/5</li><li>9/22 - waiting on BG check</li><li>9/18- BGV is still in progress, aiming for 9/28 start date.</li><li>9/11: client met candidate today. Awaiting feedback</li><li>9.4. One candidate to present to client. Another in first rounds with team.</li><li>8/28. Kick off today with team. Similar to Deliveroo job but with some AI tools exp. Viswa could be an option. Confirm next week</li></ul></details><div class="demand-skills"><b>Skills needed:</b> Snowflake, dbt, Data engineering, SQL, Python (ETL)</div></div></td></tr>
         <tr hidden data-role-parent="or1" data-ct-key="r:doordash-inc-doordash-data-engineering-resource-2-cti-sr-data-engineer-snowflake-dbt" class="role-detail demand-sub fits-row has-sub" data-geo="india"><td colspan="9"><div class="demand-fits"><b>Suggested from current staff:</b><ul class="fit-list"><li class="fit-card"><span class="fit-rank">1</span><span class="fit-name">Pavan Ankireddy</span><span class="fit-score fit-cover-thin" title="Match score out of 100: availability 40, client history 20, skills 25, practice 10, job level 5">59</span><span class="fit-whys"><span class="fit-why">992 hrs on DoorDash, Inc. over 7 mo (current)</span><span class="fit-why">SQL 4/5, Snowflake 4/5</span><span class="fit-why">Senior Data Visualization &amp; Analytics Consultant</span><span class="fit-why">18 free hrs/wk of 40 needed · 55% booked Nov 16–Dec 7</span></span><button type="button" class="alloc-btn" data-cons="Pavan Ankireddy" title="Allocate Pavan Ankireddy to this role in NetSuite">Allocate</button></li></ul><div class="fit-none">Thin bench: only 1 on the roster clear the bar for this role.</div><div class="alloc-other"><button type="button" class="alloc-btn alloc-btn-other">Allocate someone else&hellip;</button></div></div></td></tr>
-        <tr data-role-id="or5" data-ct-key="r:sunovion-pharmaceuticals-smpa-r-d-data-transformation-phase-2b-us-data-engineer" data-ct-kind="role" data-ct-label="Sunovion Pharmaceuticals: US Data Engineer" class="demand-main role-row" data-geo="us"><td class="col-demand-name"><div class="demand-role"><button type="button" class="role-toggle role-head-toggle" aria-expanded="false" data-role="or5"><span class="pj-caret"></span><span class="role-text"><span class="role-title">Sunovion Pharmaceuticals: US Data Engineer</span><span class="role-hint">suggestions &amp; allocations</span></span></button></div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Oct 19: no demand">&mdash;</div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Oct 26: no demand">&mdash;</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="20" title="Nov 2: Sunovion Pharmaceuticals: US Data Engineer (20h/wk)">20</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="20" title="Nov 9: Sunovion Pharmaceuticals: US Data Engineer (20h/wk)">20</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="20" title="Nov 16: Sunovion Pharmaceuticals: US Data Engineer (20h/wk)">20</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="16" title="Nov 23: Sunovion Pharmaceuticals: US Data Engineer (16h/wk)">16</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="20" title="Nov 30: Sunovion Pharmaceuticals: US Data Engineer (20h/wk)">20</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="20" title="Dec 7: Sunovion Pharmaceuticals: US Data Engineer (20h/wk)">20</div></td></tr>
+        <tr data-role-id="or5" data-ct-key="r:sunovion-pharmaceuticals-smpa-r-d-data-transformation-phase-2b-us-data-engineer" data-ct-kind="role" data-ct-label="Sunovion Pharmaceuticals: US Data Engineer" class="demand-main role-row" data-geo="us"><td class="col-demand-name"><div class="demand-role"><button type="button" class="role-toggle role-head-toggle" aria-expanded="false" data-role="or5"><span class="pj-caret"></span><span class="role-title">Sunovion Pharmaceuticals: US Data Engineer</span></button></div><div class="role-hint">suggestions &amp; allocations</div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Oct 19: no demand">&mdash;</div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Oct 26: no demand">&mdash;</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="20" title="Nov 2: Sunovion Pharmaceuticals: US Data Engineer (20h/wk)">20</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="20" title="Nov 9: Sunovion Pharmaceuticals: US Data Engineer (20h/wk)">20</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="20" title="Nov 16: Sunovion Pharmaceuticals: US Data Engineer (20h/wk)">20</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="16" title="Nov 23: Sunovion Pharmaceuticals: US Data Engineer (16h/wk)">16</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="20" title="Nov 30: Sunovion Pharmaceuticals: US Data Engineer (20h/wk)">20</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="20" title="Dec 7: Sunovion Pharmaceuticals: US Data Engineer (20h/wk)">20</div></td></tr>
         <tr class="role-update demand-sub has-sub" data-geo="us"><td colspan="9"><div class="demand-update"><b>Recruiting Update:</b> <i>Considering filling this role with existing staff. Not recruiting externally yet.</i><div class="demand-skills"><b>Skills needed:</b> Data engineering, SQL, Python (ETL)</div></div></td></tr>
         <tr hidden data-role-parent="or5" data-ct-key="r:sunovion-pharmaceuticals-smpa-r-d-data-transformation-phase-2b-us-data-engineer" class="role-detail demand-sub fits-row has-sub" data-geo="us"><td colspan="9"><div class="demand-fits"><b>Suggested from current staff:</b><ul class="fit-list"><li class="fit-card"><span class="fit-rank">1</span><span class="fit-name">Lisa Iyer</span><span class="fit-score fit-cover-full" title="Match score out of 100: availability 40, client history 20, skills 25, practice 10, job level 5">76</span><span class="fit-whys"><span class="fit-why">SQL 5/5, Python (ETL and Ingestion) 4/5</span><span class="fit-why">Team Lead, Data Management</span><span class="fit-why">21 free hrs/wk of 20 needed · 52% booked Nov 2–Dec 7</span></span><button type="button" class="alloc-btn" data-cons="Lisa Iyer" title="Allocate Lisa Iyer to this role in NetSuite">Allocate</button></li><li class="fit-card"><span class="fit-rank">2</span><span class="fit-name">Chris Rose</span><span class="fit-score fit-cover-full" title="Match score out of 100: availability 40, client history 20, skills 25, practice 10, job level 5">75</span><span class="fit-whys"><span class="fit-why">Python (ETL and Ingestion) 4/5, SQL 4/5</span><span class="fit-why">Senior Data Management Consultant</span><span class="fit-why">21 free hrs/wk of 20 needed · 52% booked Nov 2–Dec 7</span></span><button type="button" class="alloc-btn" data-cons="Chris Rose" title="Allocate Chris Rose to this role in NetSuite">Allocate</button></li><li class="fit-card"><span class="fit-rank">3</span><span class="fit-name">Gracjan Harasim</span><span class="fit-score fit-cover-full" title="Match score out of 100: availability 40, client history 20, skills 25, practice 10, job level 5">75</span><span class="fit-whys"><span class="fit-why">944 hrs on Sunovion Pharmaceuticals over 7 mo (current)</span><span class="fit-why">no skills-matrix entry</span><span class="fit-why">Senior Data Management Consultant</span><span class="fit-why">40 free hrs/wk of 20 needed · 0% booked Nov 2–Dec 7</span></span><button type="button" class="alloc-btn" data-cons="Gracjan Harasim" title="Allocate Gracjan Harasim to this role in NetSuite">Allocate</button></li></ul><div class="alloc-other"><button type="button" class="alloc-btn alloc-btn-other">Allocate someone else&hellip;</button></div></div></td></tr>
-        <tr data-role-id="or4" data-ct-key="r:octapharma-usa-inc-octapharma-data-engineer-fabric-power-bi-new-open-role-data-engineer-fabric-power-bi" data-ct-kind="role" data-ct-label="Octapharma USA, Inc.: Data Engineer - Fabric / Power BI" class="demand-main role-row" data-geo="us"><td class="col-demand-name"><div class="demand-role"><button type="button" class="role-toggle role-head-toggle" aria-expanded="false" data-role="or4"><span class="pj-caret"></span><span class="role-text"><span class="role-title">Octapharma USA, Inc.: Data Engineer - Fabric / Power BI</span><span class="role-hint">suggestions &amp; allocations</span></span></button></div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Oct 19: Octapharma USA, Inc.: Data Engineer - Fabric / Power BI (40h/wk)">40</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Oct 26: Octapharma USA, Inc.: Data Engineer - Fabric / Power BI (40h/wk)">40</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Nov 2: Octapharma USA, Inc.: Data Engineer - Fabric / Power BI (40h/wk)">40</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Nov 9: Octapharma USA, Inc.: Data Engineer - Fabric / Power BI (40h/wk)">40</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Nov 16: Octapharma USA, Inc.: Data Engineer - Fabric / Power BI (40h/wk)">40</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="32" title="Nov 23: Octapharma USA, Inc.: Data Engineer - Fabric / Power BI (32h/wk)">32</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Nov 30: Octapharma USA, Inc.: Data Engineer - Fabric / Power BI (40h/wk)">40</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Dec 7: Octapharma USA, Inc.: Data Engineer - Fabric / Power BI (40h/wk)">40</div></td></tr>
+        <tr data-role-id="or4" data-ct-key="r:octapharma-usa-inc-octapharma-data-engineer-fabric-power-bi-new-open-role-data-engineer-fabric-power-bi" data-ct-kind="role" data-ct-label="Octapharma USA, Inc.: Data Engineer - Fabric / Power BI" class="demand-main role-row" data-geo="us"><td class="col-demand-name"><div class="demand-role"><button type="button" class="role-toggle role-head-toggle" aria-expanded="false" data-role="or4"><span class="pj-caret"></span><span class="role-title">Octapharma USA, Inc.: Data Engineer - Fabric / Power BI</span></button></div><div class="role-hint">suggestions &amp; allocations</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Oct 19: Octapharma USA, Inc.: Data Engineer - Fabric / Power BI (40h/wk)">40</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Oct 26: Octapharma USA, Inc.: Data Engineer - Fabric / Power BI (40h/wk)">40</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Nov 2: Octapharma USA, Inc.: Data Engineer - Fabric / Power BI (40h/wk)">40</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Nov 9: Octapharma USA, Inc.: Data Engineer - Fabric / Power BI (40h/wk)">40</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Nov 16: Octapharma USA, Inc.: Data Engineer - Fabric / Power BI (40h/wk)">40</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="32" title="Nov 23: Octapharma USA, Inc.: Data Engineer - Fabric / Power BI (32h/wk)">32</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Nov 30: Octapharma USA, Inc.: Data Engineer - Fabric / Power BI (40h/wk)">40</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Dec 7: Octapharma USA, Inc.: Data Engineer - Fabric / Power BI (40h/wk)">40</div></td></tr>
         <tr class="role-update demand-sub has-sub" data-geo="us"><td colspan="9"><div class="demand-update"><div class="demand-meta"><b>Hiring manager:</b> Atin Bansal &middot; <b>Type:</b> Contractor &middot; <b>Recruiter:</b> Jill Austin &middot; <b>Target start:</b> 11/09/2026 &middot; <b>Open:</b> 3d</div><b>Recruiting Update:</b> 10/16: opened to start pooling contractors. Might use Sky Wu if client agrees to 6+ months. Hope to get confirmation from client next week<div class="demand-skills"><b>Skills needed:</b> Power BI, Microsoft Fabric, Data engineering, SQL, Python (ETL)</div></div></td></tr>
         <tr hidden data-role-parent="or4" data-ct-key="r:octapharma-usa-inc-octapharma-data-engineer-fabric-power-bi-new-open-role-data-engineer-fabric-power-bi" class="role-detail demand-sub fits-row has-sub" data-geo="us"><td colspan="9"><div class="demand-fits"><b>Suggested from current staff:</b><ul class="fit-list"><li class="fit-card"><span class="fit-rank">1</span><span class="fit-name">Gracjan Harasim</span><span class="fit-score fit-cover-full" title="Match score out of 100: availability 40, client history 20, skills 25, practice 10, job level 5">55</span><span class="fit-whys"><span class="fit-why">no skills-matrix entry</span><span class="fit-why">Senior Data Management Consultant</span><span class="fit-why">40 free hrs/wk of 40 needed · 0% booked Oct 19–Dec 7</span></span><button type="button" class="alloc-btn" data-cons="Gracjan Harasim" title="Allocate Gracjan Harasim to this role in NetSuite">Allocate</button></li><li class="fit-card"><span class="fit-rank">2</span><span class="fit-name">Nic Ivey</span><span class="fit-score fit-cover-thin" title="Match score out of 100: availability 40, client history 20, skills 25, practice 10, job level 5">46</span><span class="fit-whys"><span class="fit-why">305 hrs on Octapharma USA, Inc. over 7 mo (through 05/2026)</span><span class="fit-why">SQL 4/5</span><span class="fit-why">Data Visualization &amp; Analytics Consultant</span><span class="fit-why">10 free hrs/wk of 40 needed · 76% booked Oct 19–Dec 7</span></span><button type="button" class="alloc-btn" data-cons="Nic Ivey" title="Allocate Nic Ivey to this role in NetSuite">Allocate</button></li><li class="fit-card"><span class="fit-rank">3</span><span class="fit-name">Lisa Iyer</span><span class="fit-score fit-cover-thin" title="Match score out of 100: availability 40, client history 20, skills 25, practice 10, job level 5">44</span><span class="fit-whys"><span class="fit-why">SQL 5/5, Python (ETL and Ingestion) 4/5</span><span class="fit-why">Team Lead, Data Management</span><span class="fit-why">16 free hrs/wk of 40 needed · 64% booked Oct 19–Dec 7</span></span><button type="button" class="alloc-btn" data-cons="Lisa Iyer" title="Allocate Lisa Iyer to this role in NetSuite">Allocate</button></li></ul><div class="alloc-other"><button type="button" class="alloc-btn alloc-btn-other">Allocate someone else&hellip;</button></div></div></td></tr>
-        <tr data-role-id="or2" data-ct-key="r:doordash-inc-doordash-rsl-team-2026-marcus-backfill-sr-analyst-sql" data-ct-kind="role" data-ct-label="DoorDash, Inc.: Marcus backfill-Sr. Analyst SQL" class="demand-main role-row" data-geo="us"><td class="col-demand-name"><div class="demand-role"><button type="button" class="role-toggle role-head-toggle" aria-expanded="false" data-role="or2"><span class="pj-caret"></span><span class="role-text"><span class="role-title">DoorDash, Inc.: Marcus backfill-Sr. Analyst SQL</span><span class="role-hint">suggestions &amp; allocations</span></span></button></div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Oct 19: no demand">&mdash;</div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Oct 26: no demand">&mdash;</div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Nov 2: no demand">&mdash;</div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Nov 9: no demand">&mdash;</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Nov 16: DoorDash, Inc.: Marcus backfill-Sr. Analyst SQL (40h/wk)">40</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="32" title="Nov 23: DoorDash, Inc.: Marcus backfill-Sr. Analyst SQL (32h/wk)">32</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Nov 30: DoorDash, Inc.: Marcus backfill-Sr. Analyst SQL (40h/wk)">40</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Dec 7: DoorDash, Inc.: Marcus backfill-Sr. Analyst SQL (40h/wk)">40</div></td></tr>
+        <tr data-role-id="or2" data-ct-key="r:doordash-inc-doordash-rsl-team-2026-marcus-backfill-sr-analyst-sql" data-ct-kind="role" data-ct-label="DoorDash, Inc.: Marcus backfill-Sr. Analyst SQL" class="demand-main role-row" data-geo="us"><td class="col-demand-name"><div class="demand-role"><button type="button" class="role-toggle role-head-toggle" aria-expanded="false" data-role="or2"><span class="pj-caret"></span><span class="role-title">DoorDash, Inc.: Marcus backfill-Sr. Analyst SQL</span></button></div><div class="role-hint">suggestions &amp; allocations</div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Oct 19: no demand">&mdash;</div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Oct 26: no demand">&mdash;</div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Nov 2: no demand">&mdash;</div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Nov 9: no demand">&mdash;</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Nov 16: DoorDash, Inc.: Marcus backfill-Sr. Analyst SQL (40h/wk)">40</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="32" title="Nov 23: DoorDash, Inc.: Marcus backfill-Sr. Analyst SQL (32h/wk)">32</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Nov 30: DoorDash, Inc.: Marcus backfill-Sr. Analyst SQL (40h/wk)">40</div></td><td class="wk"><div class="wk-cell wk-demand" data-h="40" title="Dec 7: DoorDash, Inc.: Marcus backfill-Sr. Analyst SQL (40h/wk)">40</div></td></tr>
         <tr class="role-update demand-sub has-sub" data-geo="us"><td colspan="9"><div class="demand-update"><div class="demand-meta"><b>Hiring manager:</b> Ryan Kreisberg &middot; <b>Type:</b> Contractor &middot; <b>Recruiter:</b> Jill Austin &middot; <b>Target start:</b> 11/16/2026 &middot; <b>Open:</b> 27d</div><b>Recruiting Update:</b> 10/13: Client is on Pat leave until early Nov so candidates cannot be met until he returns which pushed start out a few weeks<details class="demand-history"><summary>4 earlier updates</summary><ul><li>10/9: presented finalist to client. Setting up client interview. Their availability is limited so might be  delay.</li><li>10/2: 3 interviews this week. moving 2 to team meeting Wed/Thursday</li><li>9/25: KO with team Monday.</li><li>9/21 opening role to backfill Marcus</li></ul></details><div class="demand-skills"><b>Skills needed:</b> SQL, Data analysis, Reporting</div></div></td></tr>
         <tr hidden data-role-parent="or2" data-ct-key="r:doordash-inc-doordash-rsl-team-2026-marcus-backfill-sr-analyst-sql" class="role-detail demand-sub fits-row has-sub" data-geo="us"><td colspan="9"><div class="demand-fits"><b>Suggested from current staff:</b><ul class="fit-list"><li class="fit-card"><span class="fit-rank">1</span><span class="fit-name">Gracjan Harasim</span><span class="fit-score fit-cover-full" title="Match score out of 100: availability 40, client history 20, skills 25, practice 10, job level 5">48</span><span class="fit-whys"><span class="fit-why">no skills-matrix entry</span><span class="fit-why">Senior Data Management Consultant</span><span class="fit-why">40 free hrs/wk of 40 needed · 0% booked Nov 16–Dec 7</span></span><button type="button" class="alloc-btn" data-cons="Gracjan Harasim" title="Allocate Gracjan Harasim to this role in NetSuite">Allocate</button></li><li class="fit-card"><span class="fit-rank">2</span><span class="fit-name">Dillon Mullis</span><span class="fit-score fit-cover-part" title="Match score out of 100: availability 40, client history 20, skills 25, practice 10, job level 5">44</span><span class="fit-whys"><span class="fit-why">Senior Software Engineer</span><span class="fit-why">36 free hrs/wk of 40 needed · 12% booked Nov 16–Dec 7</span></span><button type="button" class="alloc-btn" data-cons="Dillon Mullis" title="Allocate Dillon Mullis to this role in NetSuite">Allocate</button></li><li class="fit-card"><span class="fit-rank">3</span><span class="fit-name">Lisa Iyer</span><span class="fit-score fit-cover-part" title="Match score out of 100: availability 40, client history 20, skills 25, practice 10, job level 5">31</span><span class="fit-whys"><span class="fit-why">Team Lead, Data Management</span><span class="fit-why">22 free hrs/wk of 40 needed · 50% booked Nov 16–Dec 7</span></span><button type="button" class="alloc-btn" data-cons="Lisa Iyer" title="Allocate Lisa Iyer to this role in NetSuite">Allocate</button></li></ul><div class="alloc-other"><button type="button" class="alloc-btn alloc-btn-other">Allocate someone else&hellip;</button></div></div></td></tr>
         <tr data-role-id="or10" data-ct-key="r:bsc-solutions-architecture-no-scheduled-demand-in-salesforce-bsc-solutions-architect" data-ct-kind="role" data-ct-label="BSC: BSC Solutions Architect" class="demand-main role-row" data-geo="us"><td class="col-demand-name"><div class="demand-role"><span class="role-title">BSC: BSC Solutions Architect</span></div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Oct 19: no demand">&mdash;</div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Oct 26: no demand">&mdash;</div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Nov 2: no demand">&mdash;</div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Nov 9: no demand">&mdash;</div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Nov 16: no demand">&mdash;</div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Nov 23: no demand">&mdash;</div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Nov 30: no demand">&mdash;</div></td><td class="wk"><div class="wk-cell wk-demand-empty" data-h="0" title="Dec 7: no demand">&mdash;</div></td></tr>
@@ -2860,11 +2908,7 @@ h2.sec-head.sec-toggle:focus-visible { outline: 2px solid var(--accent); outline
     var allocBtn = el("button", "ct-ghost", "+ Allocation");
     allocBtn.type = "button";
     allocBtn.addEventListener("click", function () { S.allocPrefillKind = "add"; toggleForm("alloc"); });
-    var unallocBtn = el("button", "ct-ghost", "\u2212 Unallocate");
-    unallocBtn.type = "button";
-    unallocBtn.title = "Take a consultant off a project for a range of weeks";
-    unallocBtn.addEventListener("click", function () { S.allocPrefillKind = "remove"; formOpen = null; toggleForm("alloc"); });
-    tools.appendChild(drWeekSel); tools.appendChild(actBtn); tools.appendChild(allocBtn); tools.appendChild(unallocBtn);
+    tools.appendChild(drWeekSel); tools.appendChild(actBtn); tools.appendChild(allocBtn);
     head.appendChild(drKind); head.appendChild(drTitle); head.appendChild(close); head.appendChild(tools);
 
     drBody = el("div", "ct-dr-body");
@@ -2921,6 +2965,13 @@ h2.sec-head.sec-toggle:focus-visible { outline: 2px solid var(--accent); outline
     drawer.hidden = true; scrim.hidden = true; S.openKey = null; formOpen = null;
   }
   /* Open Roles "Allocate" buttons: open the role's drawer straight on the allocation form. */
+  /* Consultant modal (Oct 21 2026): what it needs from this closure. */
+  window.__ctCtx = function () {
+    return { ROLES: ROLES, GRID: GRID, ALLOC: ALLOC, weekISO: weekISO, roleProject: roleProject, slug: slug,
+      author: function () { return S.author || ""; }, THIS_WEEK: THIS_WEEK,
+      note: function (key, text) { if (S.author && S.db) addComment(key, text, "action"); },
+      openDrawer: openDrawer };
+  };
   window.__ctAllocate = function (key, cons) {
     S.allocPrefill = cons || "";
     if (!S.subjects[key]) {
@@ -4324,5 +4375,312 @@ h2.sec-head.sec-toggle:focus-visible { outline: 2px solid var(--accent); outline
       statusEl.textContent = "The shared action items aren't reachable right now.";
     });
   }).catch(function () { statusEl.textContent = OFFLINE; });
+})();
+</script>
+
+<div id="cm-scrim" hidden></div>
+<div id="cm-modal" hidden role="dialog" aria-modal="true" aria-labelledby="cm-title">
+  <div class="cm-head"><h3 id="cm-title"></h3><span class="cm-sub" id="cm-sub"></span><button type="button" class="cm-close" id="cm-close" aria-label="Close">&times;</button></div>
+  <div class="cm-body" id="cm-body"></div>
+</div>
+<script>
+/* Consultant modal (Mark, Oct 21 2026): click a name in the 8 Week Outlook to assign the person to an
+   open role or change their allocations - a week, a date range, or an entire allocation - in NetSuite. */
+(function () {
+  var modal = document.getElementById("cm-modal"), scrim = document.getElementById("cm-scrim");
+  var body = document.getElementById("cm-body"), title = document.getElementById("cm-title"), sub = document.getElementById("cm-sub");
+  if (!modal) return;
+  /* the page's colour variables live on .viz-root, so the modal has to sit inside it */
+  var root = document.querySelector(".viz-root") || document.body;
+  root.appendChild(scrim); root.appendChild(modal);
+  var cur = null;   /* {name, key, row} */
+
+  function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined && text !== null) n.textContent = text; return n; }
+  function ctx() { return typeof window.__ctCtx === "function" ? window.__ctCtx() : null; }
+  function nameOf(td) { var t = ""; Array.prototype.forEach.call(td.childNodes, function (n) { if (n.nodeType === 3) t += n.textContent; }); return t.replace(/\s+/g, " ").trim(); }
+  function fmt(h) { return (Math.round(h * 10) / 10).toString(); }
+  function status(node, msg, kind) { node.className = "cm-status" + (kind ? " cm-" + kind : ""); node.textContent = msg || ""; }
+  function post(payload) {
+    return fetch("/api/allocate", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { j.__status = r.status; return j; }); });
+  }
+  function errText(j) {
+    var d = j.detail && typeof j.detail === "object" ? JSON.stringify(j.detail) : (j.detail || "");
+    var code = { netsuite_allocation_not_found: "no allocation found", netsuite_employee_not_found: "consultant not found in NetSuite",
+      netsuite_project_not_found: "project not found in NetSuite", netsuite_project_ambiguous: "more than one project matches",
+      netsuite_not_configured: "NetSuite isn't connected", not_an_approver: "you are not an approver" }[j.error] || j.error || ("HTTP " + j.__status);
+    return "NetSuite refused (" + code + ")" + (d ? ": " + String(d).slice(0, 240) : "");
+  }
+  function tagRow(row, text) {
+    if (!row) return;
+    var td = row.querySelector("td.grid-name"); if (!td) return;
+    var t = td.querySelector(".cm-tag"); if (!t) { t = el("span", "cm-tag"); td.appendChild(t); }
+    t.textContent = text; t.title = "Changed in NetSuite from this page; the Outlook updates on the next Fivetran sync and dbt build.";
+  }
+  function liveState(c) {
+    var A = (c && c.ALLOC) || {};
+    if (!A.configured) return { ok: false, why: "NetSuite isn't connected to the app yet, so changes can't be written from here." };
+    if (!A.approver) return { ok: false, why: "Only approvers can write allocations to NetSuite." };
+    return { ok: true, dry: !!A.dryRun, why: A.dryRun ? "Dry run: NetSuite is checked but nothing is written." : "" };
+  }
+
+  /* bookings off the grid row's tooltips: {project: {weekLabel: hours}} */
+  function booked(row, weeks) {
+    var out = {};
+    Array.prototype.forEach.call(row.querySelectorAll("td.wk .wk-cell"), function (cell, i) {
+      var t = cell.getAttribute("title") || "";
+      t.replace(/^[^:]*:\s*/, "").split("; ").forEach(function (bit) {
+        var m = /^(.*)\s\(([\d.]+)h\)$/.exec(bit.trim()); if (!m) return;
+        out[m[1]] = out[m[1]] || {}; out[m[1]][weeks[i]] = parseFloat(m[2]) || 0;
+      });
+    });
+    return out;
+  }
+
+  function projList() {
+    if (document.getElementById("cm-proj-list")) return;
+    var dl = el("datalist"); dl.id = "cm-proj-list"; var seen = {};
+    Array.prototype.forEach.call(document.querySelectorAll("#staff-grid td.wk .wk-cell[title]"), function (cell) {
+      (cell.getAttribute("title") || "").replace(/^[^:]*:\s*/, "").split("; ").forEach(function (bit) {
+        var m = /^(.*)\s\(([\d.]+)h\)$/.exec(bit.trim()); if (m && !seen[m[1]]) { seen[m[1]] = 1; var o = el("option"); o.value = m[1]; dl.appendChild(o); }
+      });
+    });
+    Array.prototype.forEach.call(document.querySelectorAll(".pj-name"), function (n) { var v = n.textContent.trim(); if (v && !seen[v]) { seen[v] = 1; var o = el("option"); o.value = v; dl.appendChild(o); } });
+    root.appendChild(dl);
+  }
+
+  function open(name, row) {
+    var c = ctx();
+    if (!c) return;
+    projList();
+    cur = { name: name, key: "c:" + c.slug(name), row: row };
+    title.textContent = name;
+    var badge = row.querySelector(".util-badge"), tgt = row.querySelector(".target-badge");
+    sub.textContent = (badge ? "avg " + badge.textContent.trim() + " over the 8 weeks" : "") + (tgt ? " · " + tgt.textContent.trim() : "");
+    body.textContent = "";
+    var live = liveState(c);
+    if (!live.ok || live.why) { var w = el("p", "cm-note", live.why); body.appendChild(w); }
+    body.appendChild(weekSection(c, live));
+    body.appendChild(nsSection(c, live));
+    body.appendChild(assignSection(c, live));
+    modal.hidden = false; scrim.hidden = false;
+    document.body.style.overflow = "hidden";
+  }
+  function close() { modal.hidden = true; scrim.hidden = true; document.body.style.overflow = ""; cur = null; }
+
+  /* ---- 1. week by week ------------------------------------------------------------------- */
+  function weekSection(c, live) {
+    var sec = el("div", "cm-sec");
+    sec.appendChild(el("h4", null, "Week by week · next 8 weeks"));
+    sec.appendChild(el("p", "cm-why", "Hours per week as the Outlook shows them. Change any cell - set a week to 0 to take them off that week, or type hours into an empty week - then Apply. Only the weeks you change are rewritten in NetSuite."));
+    var weeks = c.GRID.weeks, bk = booked(cur.row, weeks), projs = Object.keys(bk).sort();
+    var tbl = el("table", "cm-grid"), thead = el("thead"), hr = el("tr");
+    hr.appendChild(el("th", null, "Project"));
+    weeks.forEach(function (w) { hr.appendChild(el("th", null, w)); });
+    hr.appendChild(el("th", null, ""));
+    thead.appendChild(hr); tbl.appendChild(thead);
+    var tb = el("tbody"); tbl.appendChild(tb);
+    var inputs = {};  /* project -> [input] */
+    function addRow(pr, hrs) {
+      var tr = el("tr"); var td0 = el("td", "cm-proj", pr); td0.title = pr; tr.appendChild(td0);
+      inputs[pr] = [];
+      weeks.forEach(function (w) {
+        var td = el("td"), inp = el("input"); inp.type = "number"; inp.min = "0"; inp.max = "60"; inp.step = "1";
+        inp.value = fmt(hrs[w] || 0); inp.dataset.orig = inp.value;
+        inp.addEventListener("input", function () { inp.classList.toggle("cm-changed", parseFloat(inp.value || "0") !== parseFloat(inp.dataset.orig)); totals(); });
+        td.appendChild(inp); tr.appendChild(td); inputs[pr].push(inp);
+      });
+      var ta = el("td", "cm-row-actions"), clr = el("button", "cm-btn cm-sm cm-danger", "Clear"); clr.type = "button";
+      clr.title = "Set every week to 0 (take them off this project for the 8 weeks)";
+      clr.addEventListener("click", function () { inputs[pr].forEach(function (i) { i.value = "0"; i.dispatchEvent(new Event("input")); }); });
+      ta.appendChild(clr); tr.appendChild(ta); tb.appendChild(tr);
+    }
+    projs.forEach(function (pr) { addRow(pr, bk[pr]); });
+    var tot = el("tr", "cm-total"); tot.appendChild(el("td", null, "Total")); var totCells = [];
+    weeks.forEach(function () { var td = el("td"); totCells.push(td); tot.appendChild(td); }); tot.appendChild(el("td")); tb.appendChild(tot);
+    function totals() {
+      weeks.forEach(function (w, i) {
+        var h = 0; Object.keys(inputs).forEach(function (pr) { h += parseFloat(inputs[pr][i].value || "0") || 0; });
+        totCells[i].innerHTML = fmt(h) + ' <span class="cm-pct">' + Math.round(h / 40 * 100) + '%</span>';
+      });
+    }
+    totals();
+    sec.appendChild(tbl);
+    if (!projs.length) sec.appendChild(el("p", "cm-note", "No bookings in the next 8 weeks. Use Assign below."));
+    var addP = el("div", "cm-actions");
+    var addIn = el("input"); addIn.placeholder = "add a project row (NetSuite project name)"; addIn.setAttribute("list", "cm-proj-list"); addIn.style.minWidth = "320px"; addIn.className = "cm-proj-add";
+    var addB = el("button", "cm-btn cm-sm", "+ Row"); addB.type = "button";
+    addB.addEventListener("click", function () { var pr = (addIn.value || "").trim(); if (!pr || inputs[pr]) return; tb.removeChild(tot); addRow(pr, {}); tb.appendChild(tot); addIn.value = ""; });
+    addP.appendChild(addIn); addP.appendChild(addB);
+    var note = el("input"); note.placeholder = "note (optional)"; note.style.minWidth = "260px"; addP.appendChild(note);
+    var apply = el("button", "cm-btn cm-primary", live.ok ? (live.dry ? "Check in NetSuite (dry run)" : "Apply in NetSuite") : "Apply in NetSuite"); apply.type = "button"; apply.disabled = !live.ok;
+    var st = el("div", "cm-status"), log = el("ul", "cm-log");
+    apply.addEventListener("click", function () {
+      var changes = [];
+      Object.keys(inputs).forEach(function (pr) {
+        var ws = [], changed = false;
+        inputs[pr].forEach(function (inp, i) {
+          var h = Math.max(0, parseFloat(inp.value || "0") || 0), iso = c.weekISO(i);
+          if (h !== parseFloat(inp.dataset.orig)) changed = true;
+          ws.push({ week: iso, hours: h });
+        });
+        if (changed) changes.push({ project: pr, weeks: ws });
+      });
+      if (!changes.length) { status(st, "Nothing changed.", null); return; }
+      apply.disabled = true; status(st, "Writing to NetSuite…", null);
+      var i = 0, said = [];
+      (function next() {
+        if (i >= changes.length) {
+          apply.disabled = false; status(st, "Done - " + said.length + " project" + (said.length === 1 ? "" : "s") + " updated. The Outlook picks it up on the next sync.", "ok");
+          tagRow(cur.row, live.dry ? "dry run" : "changed in NetSuite");
+          c.note(cur.key, (live.dry ? "NetSuite dry run (week by week): " : "Week-by-week change in NetSuite: ") + cur.name + " - " + said.join("; ") + ((note.value || "").trim() ? " - " + note.value.trim() : ""));
+          return;
+        }
+        var ch = changes[i++];
+        post({ kind: "reshape", consultant: cur.name, project: ch.project, weeks: ch.weeks, note: (note.value || "").trim(),
+               key: cur.key, label: cur.name, author: c.author(), week: c.THIS_WEEK })
+        .then(function (j) {
+          if (j.ok) {
+            var ns = j.netsuite || {}, chg = (ns.changed || []).map(function (x) { return x.week.slice(5) + " " + x.from + "→" + x.to; }).join(", ");
+            var line = ch.project + ": " + (chg || "no difference from NetSuite") + (ns.created && ns.created.length ? " · " + ns.created.length + " new allocation" + (ns.created.length === 1 ? "" : "s") : "") + (ns.trimmed && ns.trimmed.length ? " · " + ns.trimmed.length + " trimmed" : "");
+            said.push(line); log.appendChild(el("li", null, line));
+            inputs[ch.project].forEach(function (inp) { inp.dataset.orig = fmt(parseFloat(inp.value || "0") || 0); inp.classList.remove("cm-changed"); });
+            next();
+          } else { apply.disabled = false; status(st, ch.project + ": " + errText(j), "err"); }
+        }).catch(function () { apply.disabled = false; status(st, "Couldn't reach the app.", "err"); });
+      })();
+    });
+    addP.appendChild(apply); sec.appendChild(addP); sec.appendChild(st); sec.appendChild(log);
+    return sec;
+  }
+
+  /* ---- 2. allocations in NetSuite ----------------------------------------------------------- */
+  function nsSection(c, live) {
+    var sec = el("div", "cm-sec");
+    sec.appendChild(el("h4", null, "Allocations in NetSuite"));
+    sec.appendChild(el("p", "cm-why", "Every allocation of theirs that hasn't ended, straight from NetSuite. Change the dates or hours per week and Save to rewrite the whole allocation (this is where an end date past the 8 weeks is moved), or Remove it."));
+    var st = el("div", "cm-status"); var holder = el("div");
+    sec.appendChild(holder); sec.appendChild(st);
+    if (!live.ok && !((c.ALLOC || {}).configured)) { status(st, "NetSuite isn't connected to the app, so there is nothing to show here.", null); return sec; }
+    status(st, "Loading from NetSuite…", null);
+    fetch("/api/allocate?consultant=" + encodeURIComponent(cur.name), { credentials: "same-origin" })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { j.__status = r.status; return j; }); })
+      .then(function (j) {
+        if (!j.ok) { status(st, errText(j), "err"); return; }
+        status(st, "", null);
+        var rows = j.allocations || [];
+        if (!rows.length) { holder.appendChild(el("p", "cm-note", "No current or future allocations in NetSuite for " + (j.employeeName || cur.name) + ".")); return; }
+        var tbl = el("table", "cm-grid"), thead = el("thead"), hr = el("tr");
+        ["Project", "Start", "End", "Hrs/wk", "Role", ""].forEach(function (h) { hr.appendChild(el("th", null, h)); });
+        thead.appendChild(hr); tbl.appendChild(thead); var tb = el("tbody"); tbl.appendChild(tb);
+        rows.forEach(function (a) {
+          var tr = el("tr"); var td0 = el("td", "cm-proj", a.project); td0.title = "allocation " + a.allocationId; tr.appendChild(td0);
+          var sIn = el("input"); sIn.type = "date"; sIn.value = a.startDate; var eIn = el("input"); eIn.type = "date"; eIn.value = a.endDate;
+          var hIn = el("input"); hIn.type = "number"; hIn.min = "0"; hIn.max = "60"; hIn.step = "0.5"; hIn.value = fmt(a.hoursPerWeek);
+          [sIn, eIn, hIn].forEach(function (inp) { inp.dataset.orig = inp.value; inp.addEventListener("input", function () { inp.classList.toggle("cm-changed", inp.value !== inp.dataset.orig); }); });
+          var t1 = el("td"); t1.appendChild(sIn); tr.appendChild(t1); var t2 = el("td"); t2.appendChild(eIn); tr.appendChild(t2);
+          var t3 = el("td"); t3.appendChild(hIn); tr.appendChild(t3);
+          var t4 = el("td", "cm-muted", a.role || (a.unit === "H" ? a.numberHours + " h total" : a.percentOfTime + "%")); tr.appendChild(t4);
+          var ta = el("td", "cm-row-actions");
+          var save = el("button", "cm-btn cm-sm cm-primary", "Save"); save.type = "button"; save.disabled = !live.ok;
+          var rem = el("button", "cm-btn cm-sm cm-danger", "Remove"); rem.type = "button"; rem.disabled = !live.ok; rem.style.marginLeft = "4px";
+          function send(payload, what) {
+            save.disabled = rem.disabled = true; status(st, "Writing to NetSuite…", null);
+            post(payload).then(function (jj) {
+              save.disabled = rem.disabled = false;
+              if (jj.ok) {
+                var r = jj.netsuite || {};
+                var line = a.project + ": " + (r.action === "deleted" ? "allocation " + a.allocationId + " removed" : "now " + r.now.startDate + " to " + r.now.endDate + ", " + r.now.hoursPerWeek + " hrs/wk" + (r.action === "unchanged" ? " (no change)" : ""));
+                status(st, (jj.dryRun ? "Dry run OK - " : "Done - ") + line, "ok");
+                if (r.action === "deleted" && !jj.dryRun) tr.parentNode.removeChild(tr);
+                else [sIn, eIn, hIn].forEach(function (inp) { inp.dataset.orig = inp.value; inp.classList.remove("cm-changed"); });
+                tagRow(cur.row, jj.dryRun ? "dry run" : "changed in NetSuite");
+                c.note(cur.key, (jj.dryRun ? "NetSuite dry run: " : "Allocation " + what + " in NetSuite: ") + cur.name + " - " + line);
+              } else status(st, errText(jj), "err");
+            }).catch(function () { save.disabled = rem.disabled = false; status(st, "Couldn't reach the app.", "err"); });
+          }
+          save.addEventListener("click", function () {
+            send({ kind: "update", consultant: cur.name, allocationId: a.allocationId, startDate: sIn.value, endDate: eIn.value, hoursPerWeek: parseFloat(hIn.value || "0"),
+                   key: cur.key, label: cur.name, author: c.author(), week: c.THIS_WEEK }, "changed");
+          });
+          rem.addEventListener("click", function () {
+            if (!window.confirm("Remove " + cur.name + " from " + a.project + " (" + a.startDate + " to " + a.endDate + ") in NetSuite?")) return;
+            send({ kind: "update", consultant: cur.name, allocationId: a.allocationId, hoursPerWeek: 0, key: cur.key, label: cur.name, author: c.author(), week: c.THIS_WEEK }, "removed");
+          });
+          ta.appendChild(save); ta.appendChild(rem); tr.appendChild(ta); tb.appendChild(tr);
+        });
+        holder.appendChild(tbl);
+      }).catch(function () { status(st, "Couldn't reach the app to read NetSuite.", "err"); });
+    return sec;
+  }
+
+  /* ---- 3. assign ------------------------------------------------------------------------- */
+  function assignSection(c, live) {
+    var sec = el("div", "cm-sec");
+    sec.appendChild(el("h4", null, "Assign"));
+    sec.appendChild(el("p", "cm-why", "To an open role on this page (hours and weeks prefilled from its demand; the role's generic allocation in NetSuite is filled) or to any other project."));
+    var f = el("div", "cm-form");
+    function field(label, node) { var l = el("label", null, label); l.appendChild(node); f.appendChild(l); return node; }
+    var roleSel = field("Open role", el("select")); var o0 = el("option", null, "Other project (not an open role)"); o0.value = ""; roleSel.appendChild(o0);
+    (c.ROLES || []).forEach(function (r) { var o = el("option", null, r.label); o.value = r.key; roleSel.appendChild(o); });
+    var proj = field("Project", el("input")); proj.placeholder = "client / project name"; proj.setAttribute("list", "cm-proj-list");
+    var hrs = field("Hours / week", el("input")); hrs.type = "number"; hrs.min = "1"; hrs.max = "60"; hrs.step = "1"; hrs.value = "40";
+    var from = field("From week", el("select")), thru = field("Through", el("select"));
+    c.GRID.weeks.forEach(function (w, i) { var a = el("option", null, w); a.value = String(i); from.appendChild(a); var b = el("option", null, w); b.value = String(i); thru.appendChild(b); });
+    thru.value = String(Math.max(0, c.GRID.weeks.length - 1));
+    var note = field("Note", el("input")); note.placeholder = "optional"; note.parentNode.className = "cm-wide";
+    function roleByKey(k) { for (var i = 0; i < c.ROLES.length; i++) if (c.ROLES[i].key === k) return c.ROLES[i]; return null; }
+    roleSel.addEventListener("change", function () {
+      var r = roleByKey(roleSel.value);
+      if (!r) { proj.removeAttribute("readonly"); if (proj.dataset.auto === "1") proj.value = ""; proj.dataset.auto = ""; return; }
+      var rp = c.roleProject(r.label);
+      proj.value = (rp && rp.project) || r.project || r.label; proj.setAttribute("readonly", "readonly"); proj.dataset.auto = "1";
+      var first = -1, last = -1, h = 0;
+      c.GRID.weeks.forEach(function (w, i) { if ((r.hrs[w] || 0) > 0) { if (first < 0) first = i; last = i; h = Math.max(h, r.hrs[w]); } });
+      if (first >= 0) { from.value = String(first); thru.value = String(last); }
+      if (h) hrs.value = String(Math.round(h));
+    });
+    sec.appendChild(f);
+    var act = el("div", "cm-actions"), st = el("div", "cm-status");
+    var go = el("button", "cm-btn cm-primary", live.ok ? (live.dry ? "Check in NetSuite (dry run)" : "Allocate in NetSuite") : "Allocate in NetSuite"); go.type = "button"; go.disabled = !live.ok;
+    go.addEventListener("click", function () {
+      var pr = (proj.value || "").trim(), h = parseFloat(hrs.value) || 0;
+      var i0 = parseInt(from.value, 10), i1 = parseInt(thru.value, 10); if (i1 < i0) { var t = i0; i0 = i1; i1 = t; }
+      if (!pr) { proj.focus(); return; } if (!(h > 0)) { hrs.focus(); return; }
+      var weeks = []; for (var i = i0; i <= i1; i++) { var w = c.weekISO(i); if (w) weeks.push(w); }
+      var r = roleByKey(roleSel.value), rl = r ? r.label : "";
+      go.disabled = true; status(st, "Writing to NetSuite…", null);
+      post({ consultant: cur.name, project: pr, roleKey: roleSel.value || "", roleLabel: rl, roleTitle: rl ? rl.slice(rl.indexOf(": ") + 2) : "",
+             hours: h, weeks: weeks, note: (note.value || "").trim(), key: cur.key, label: cur.name, author: c.author(), week: c.THIS_WEEK, fillOpenRole: !!rl })
+      .then(function (j) {
+        go.disabled = false;
+        if (j.ok) {
+          var ns = j.netsuite || {};
+          var line = cur.name + " → " + (ns.projectName || pr) + ", " + h + " hrs/wk (" + (ns.percentOfTime || "") + "%), " + ns.startDate + " to " + ns.endDate
+            + (ns.allocationId ? " · allocation " + ns.allocationId : "") + (ns.openRole && ns.openRole.action !== "none" ? " · open role " + ns.openRole.action : "");
+          status(st, (j.dryRun ? "Dry run OK - " : "Done - ") + line, "ok");
+          tagRow(cur.row, j.dryRun ? "dry run" : "changed in NetSuite");
+          c.note(cur.key, (j.dryRun ? "NetSuite dry run OK: " : "Allocated in NetSuite: ") + line + ((note.value || "").trim() ? " - " + note.value.trim() : ""));
+        } else status(st, errText(j), "err");
+      }).catch(function () { go.disabled = false; status(st, "Couldn't reach the app.", "err"); });
+    });
+    var cm = el("button", "cm-btn", "Comments ✎"); cm.type = "button"; cm.title = "Open this consultant's comment thread";
+    cm.addEventListener("click", function () { var k = cur.key; close(); if (c.openDrawer) c.openDrawer(k); });
+    act.appendChild(go); act.appendChild(cm); sec.appendChild(act); sec.appendChild(st);
+    return sec;
+  }
+
+  /* ---- wiring ---------------------------------------------------------------------------- */
+  document.addEventListener("click", function (ev) {
+    var t = ev.target;
+    if (!t || !t.closest) return;
+    if (t.closest("#cm-close") || (t.id === "cm-scrim")) { close(); return; }
+    var td = t.closest("#staff-grid td.grid-name");
+    if (!td || t.closest(".ct-btn, button, a, input, select")) return;
+    var name = nameOf(td); if (!name) return;
+    ev.preventDefault();
+    open(name, td.closest("tr"));
+  });
+  document.addEventListener("keydown", function (ev) { if (ev.key === "Escape" && !modal.hidden) close(); });
 })();
 </script>

@@ -83,12 +83,16 @@ workflow's secrets, then `python pipeline/run.py` (add `--publish` to upload).
   "Staffing Suggestions and Allocations" line is gone; a small "suggestions & allocations" hint sits under
   the title until the role is open). The recruiting-update callout is grey instead of yellow, so the amber
   week cells are the only yellow in the section.
-- Unallocate: the comment drawer has a "− Unallocate" button that opens the allocation form in "Remove from
-  a project" mode (consultant, project from their current bookings, hours and weeks prefilled). For approvers
-  with NetSuite configured it writes the removal (`POST /api/allocate` with `kind: "remove"` →
-  `lib/netsuite.removeAllocation`): the consultant's Resource Allocations on that project are deleted when
-  they fall inside the weeks, ended / started later when they overlap one edge, or split when they span the
-  window. Proposed removals on the list can be pushed with "Enter in NetSuite" too.
+- Consultant modal (`src/consultant_modal.py`, last in the chain): click a name in the 8 Week Outlook. Three
+  parts - **Week by week** (the 8 weeks per project, hours editable; Apply → `POST /api/allocate`
+  `{kind:"reshape"}`, which rewrites only the weeks that differ from NetSuite: trims the existing coverage
+  there and creates allocations for each run of equal hours), **Allocations in NetSuite** (every allocation
+  of theirs that hasn't ended, fetched live via `GET /api/allocate?consultant=`; start/end/hrs-per-week
+  editable, Save → `{kind:"update"}`, Remove → the same with 0 hrs, which deletes the record), and
+  **Assign** (to an open role with hours/weeks prefilled from its demand - fills the generic allocation - or
+  to any other project). Approvers only; otherwise the modal shows the grid with the buttons off.
+  The drawer's "Remove from a project" mode also writes to NetSuite now (`{kind:"remove"}`,
+  `lib/netsuite.removeAllocation`: delete / end / start later / split around the weeks).
 - Utilization Summary: a visible "Why <month> is projected to close ..." paragraph under the chart - how the
   closed weeks of this month read against the weeks still scheduled (new `orgweeks` pull: billable, denominator
   and time off per week of the current month, all named practices), the last-4-weeks allocation vs actual,

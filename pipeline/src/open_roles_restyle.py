@@ -40,10 +40,11 @@ def title_btn(m):
     n_title += 1
     return (f'{m.group(0)[:m.start(2) - m.start(0)]}'
             f'<button type="button" class="role-toggle role-head-toggle" aria-expanded="false" data-role="{rid}">'
-            f'<span class="pj-caret"></span><span class="role-text">{m.group(2)}'
-            f'<span class="role-hint">suggestions &amp; allocations</span></span></button>')
+            f'<span class="pj-caret"></span>{m.group(2)}</button></div>'
+            f'<div class="role-hint">suggestions &amp; allocations</div>')
+# the hint sits outside .demand-role so the app layer's ROLES labels (read from .demand-role) stay clean
 sec = re.sub(r'<tr data-role-id="(or\d+)"[^>]*class="demand-main role-row"[^>]*><td class="col-demand-name"><div class="demand-role">'
-             r'(<span class="role-title">.*?</span>)', title_btn, sec, flags=re.S)
+             r'(<span class="role-title">.*?</span>)</div>', title_btn, sec, flags=re.S)
 n_more = len(re.findall(r'\s*<tr class="role-more"[^>]*>.*?</tr>', sec, flags=re.S))
 sec = re.sub(r'\s*<tr class="role-more"[^>]*>.*?</tr>', "", sec, flags=re.S)
 assert n_title and n_title == n_more, (n_title, n_more)
@@ -58,7 +59,7 @@ CSS = """
 #roles-table button.role-toggle.role-head-toggle { display: inline-flex; align-items: flex-start; gap: 7px; width: auto;
   background: none; border: 0; padding: 0; margin: 0; font: inherit; color: inherit; cursor: pointer; text-align: left; }
 #roles-table button.role-toggle.role-head-toggle .pj-caret { flex: none; margin-top: 4px; }
-#roles-table button.role-toggle.role-head-toggle .role-text { display: flex; flex-direction: column; gap: 1px; }
+#roles-table .role-hint { margin-left: 15px; }
 #roles-table button.role-toggle.role-head-toggle .role-title { text-decoration: none; }
 #roles-table button.role-toggle.role-head-toggle:hover .role-title { color: var(--accent); }
 #roles-table button.role-toggle.role-head-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }

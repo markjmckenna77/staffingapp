@@ -165,6 +165,7 @@ CHAIN = [
     ["recruiting_band_toggle.py", "dashboard_artifact.html"],
     "HIDE",
     ["collapsible_sections.py", "dashboard_artifact.html"],
+    ["consultant_modal.py", "dashboard_artifact.html"],
 ]
 
 

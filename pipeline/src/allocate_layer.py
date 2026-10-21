@@ -210,6 +210,13 @@ js = must_replace('''  function closeDrawer() {
     drawer.hidden = true; scrim.hidden = true; S.openKey = null; formOpen = null;
   }
   /* Open Roles "Allocate" buttons: open the role's drawer straight on the allocation form. */
+  /* Consultant modal (Oct 21 2026): what it needs from this closure. */
+  window.__ctCtx = function () {
+    return { ROLES: ROLES, GRID: GRID, ALLOC: ALLOC, weekISO: weekISO, roleProject: roleProject, slug: slug,
+      author: function () { return S.author || ""; }, THIS_WEEK: THIS_WEEK,
+      note: function (key, text) { if (S.author && S.db) addComment(key, text, "action"); },
+      openDrawer: openDrawer };
+  };
   window.__ctAllocate = function (key, cons) {
     S.allocPrefill = cons || "";
     openDrawer(key);
@@ -223,8 +230,10 @@ js = must_replace("""          if ((r.hrs[w] || 0) > 0) { if (firstWk < 0) first
 js = must_replace('      var ok = el("button", "mlog-sm", "Entered in Salesforce");',
                   '      var ok = el("button", "mlog-sm", ALLOC.configured && ALLOC.approver ? "Enter in NetSuite" : "Entered in NetSuite");', where=js)
 
-# ---- 3b-ii. unallocate (Mark, Oct 21 2026): a drawer button that opens the same form in
-# "Remove from a project" mode; the form then writes the removal to NetSuite for approvers.
+# ---- 3b-ii. Oct 21 2026: the "+ Allocation" button resets the form to "add"; the form's
+# "Remove from a project" mode writes the removal to NetSuite for approvers. Allocation edits
+# for a consultant live in the consultant modal (consultant_modal.py), opened from the 8 Week
+# Outlook names; it uses window.__ctCtx below.
 js = must_replace('''    var allocBtn = el("button", "ct-ghost", "+ Allocation");
     allocBtn.type = "button";
     allocBtn.addEventListener("click", function () { toggleForm("alloc"); });
@@ -232,11 +241,7 @@ js = must_replace('''    var allocBtn = el("button", "ct-ghost", "+ Allocation")
 '''    var allocBtn = el("button", "ct-ghost", "+ Allocation");
     allocBtn.type = "button";
     allocBtn.addEventListener("click", function () { S.allocPrefillKind = "add"; toggleForm("alloc"); });
-    var unallocBtn = el("button", "ct-ghost", "\\u2212 Unallocate");
-    unallocBtn.type = "button";
-    unallocBtn.title = "Take a consultant off a project for a range of weeks";
-    unallocBtn.addEventListener("click", function () { S.allocPrefillKind = "remove"; formOpen = null; toggleForm("alloc"); });
-    tools.appendChild(drWeekSel); tools.appendChild(actBtn); tools.appendChild(allocBtn); tools.appendChild(unallocBtn);''', where=js)
+    tools.appendChild(drWeekSel); tools.appendChild(actBtn); tools.appendChild(allocBtn);''', where=js)
 js = must_replace('''    if (kind === "project") changeSel.value = "remove";
     syncKind();''', '''    if (kind === "project") changeSel.value = "remove";
     if (S.allocPrefillKind) { changeSel.value = S.allocPrefillKind; S.allocPrefillKind = ""; }
