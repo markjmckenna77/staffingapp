@@ -125,11 +125,18 @@ js = must_replace('''      hint.textContent = rem
         : "Saved as a proposed assignment: it shows on the 8 Week Outlook and in Capacity vs. Need marked "
           + "pending, and stays on the Proposed allocations list until someone marks it entered in Salesforce.";
       save.textContent = rem ? "Propose removal" : "Propose allocation";''',
-'''      var live = !rem && ALLOC.configured && ALLOC.approver;
+'''      var live = ALLOC.configured && ALLOC.approver;
+      head.textContent = rem ? (live ? "Unallocate a consultant" : "Propose a removal") : "Allocate a consultant";
       hint.textContent = rem
-        ? "Saved as a proposed removal: the 8 Week Outlook strikes the hours through, Capacity vs. Need "
-          + "shows them freed, and it stays on the Proposed allocations list until someone marks it entered "
-          + "in NetSuite. Nothing is changed in NetSuite from here."
+        ? (live
+          ? (ALLOC.dryRun ? "Dry run: NetSuite is checked (consultant, project, their allocations) but nothing is changed yet. "
+             : "Takes the consultant off this project in NetSuite now for the weeks chosen: their Resource Allocation is "
+               + "deleted, ended, or split around those weeks. ")
+            + "Snowflake and this dashboard pick it up on the next Fivetran sync and dbt build; until then the Outlook "
+            + "strikes the hours through and Capacity vs. Need shows them freed."
+          : (ALLOC.configured ? "Only approvers can write to NetSuite; " : "NetSuite isn't connected to the app yet; ")
+            + "saved as a proposed removal: the 8 Week Outlook strikes the hours through, Capacity vs. Need "
+            + "shows them freed, and it stays on the Proposed allocations list until someone enters it in NetSuite.")
         : live
           ? (ALLOC.dryRun ? "Dry run: NetSuite is checked (consultant, project, open role) but nothing is written yet. "
              : "Creates the Resource Allocation in NetSuite now - the system of record - and retires the open role's "
@@ -139,28 +146,42 @@ js = must_replace('''      hint.textContent = rem
           : (ALLOC.configured ? "Only approvers can write to NetSuite; " : "NetSuite isn't connected to the app yet; ")
             + "saved as a proposed assignment: it shows on the 8 Week Outlook and in Capacity vs. Need marked "
             + "pending, and stays on the Proposed allocations list until someone enters it in NetSuite.";
-      save.textContent = rem ? "Propose removal" : (live ? (ALLOC.dryRun ? "Check in NetSuite (dry run)" : "Allocate in NetSuite") : "Propose allocation");''', where=js)
+      save.textContent = rem ? (live ? (ALLOC.dryRun ? "Check removal in NetSuite (dry run)" : "Unallocate in NetSuite") : "Propose removal")
+                             : (live ? (ALLOC.dryRun ? "Check in NetSuite (dry run)" : "Allocate in NetSuite") : "Propose allocation");''', where=js)
 
 OLD_CLICK = '''      var weeks = GRID.weeks.slice(i0, i1 + 1);
       S.db.collection("allocations").add({'''
 NEW_CLICK = '''      var weeks = GRID.weeks.slice(i0, i1 + 1);
-      if (!isRemove() && ALLOC.configured && ALLOC.approver) {
-        var isoWeeks = [], ii;
+      if (ALLOC.configured && ALLOC.approver) {
+        var isoWeeks = [], ii, removing = isRemove();
         for (ii = i0; ii <= i1; ii++) { var w = weekISO(ii); if (w) isoWeeks.push(w); }
         if (isoWeeks.length !== weeks.length) { flashDrawerError("Couldn't work out the week dates for this grid."); return; }
-        var rl = roleSel.value ? ((roleByKey(roleSel.value) || {}).label || "") : "";
+        var rl = !removing && roleSel.value ? ((roleByKey(roleSel.value) || {}).label || "") : "";
         var rp = rl ? roleProject(rl) : null;
         save.disabled = true; save.textContent = "Writing to NetSuite\\u2026";
         fetch("/api/allocate", { method: "POST", credentials: "same-origin",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ consultant: cons, project: (rp && rp.project) || proj, roleKey: roleSel.value || "",
-            roleLabel: rl, roleTitle: rl ? rl.slice(rl.indexOf(": ") + 2) : "", hours: h, weeks: isoWeeks,
-            note: (note.value || "").trim(), key: key, label: subjectLabel(key), author: S.author, week: THIS_WEEK,
-            fillOpenRole: !!roleSel.value }) })
+          body: JSON.stringify(removing
+            ? { kind: "remove", consultant: cons, project: proj, hours: h, weeks: isoWeeks,
+                note: (note.value || "").trim(), key: key, label: subjectLabel(key), author: S.author, week: THIS_WEEK }
+            : { consultant: cons, project: (rp && rp.project) || proj, roleKey: roleSel.value || "",
+                roleLabel: rl, roleTitle: rl ? rl.slice(rl.indexOf(": ") + 2) : "", hours: h, weeks: isoWeeks,
+                note: (note.value || "").trim(), key: key, label: subjectLabel(key), author: S.author, week: THIS_WEEK,
+                fillOpenRole: !!roleSel.value }) })
         .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { j.__status = r.status; return j; }); })
         .then(function (j) {
           save.disabled = false;
-          if (j.ok) {
+          if (j.ok && removing) {
+            var nr = j.netsuite || {}, acts = nr.actions || [];
+            var said = acts.map(function (a) {
+              return "allocation " + a.allocationId + " " + ({ deleted: "deleted", ended: "ended " + a.endDate,
+                started_later: "now starts " + a.startDate, split: "ended " + a.endDate + ", tail " + (a.tailAllocationId || "recreated") }[a.action] || a.action);
+            }).join("; ");
+            addComment(key, (j.dryRun ? "NetSuite dry run OK (removal): " : "Unallocated in NetSuite: ") + cons + " \\u2212 off " + (nr.projectName || proj)
+              + ", " + nr.startDate + " to " + nr.endDate + (said ? " \\u00b7 " + said : "")
+              + ((note.value || "").trim() ? " - " + note.value.trim() : ""), "action");
+            formOpen = null; renderDrawer();
+          } else if (j.ok) {
             var ns = j.netsuite || {};
             addComment(key, (j.dryRun ? "NetSuite dry run OK: " : "Allocated in NetSuite: ") + cons + " \\u2192 " + (ns.projectName || proj)
               + ", " + h + " hrs/wk (" + (ns.percentOfTime || "") + "%), " + ns.startDate + " to " + ns.endDate
@@ -173,8 +194,8 @@ NEW_CLICK = '''      var weeks = GRID.weeks.slice(i0, i1 + 1);
             flashDrawerError("Saved as a proposal - NetSuite isn't connected yet.");
           } else {
             var d = j.detail && typeof j.detail === "object" ? JSON.stringify(j.detail) : (j.detail || "");
-            flashDrawerError("NetSuite refused (" + (j.error || j.__status) + ")" + (d ? ": " + String(d).slice(0, 300) : "")
-              + (j.id ? " - kept as a proposal." : ""));
+            flashDrawerError("NetSuite refused (" + (j.error === "netsuite_allocation_not_found" ? "no allocation of theirs on that project in those weeks" : (j.error || j.__status)) + ")"
+              + (d ? ": " + String(d).slice(0, 300) : "") + (j.id ? " - kept as a proposal." : ""));
             syncKind();
           }
         }).catch(function () { save.disabled = false; syncKind(); flashDrawerError("Couldn't reach the app to allocate."); });
@@ -200,7 +221,26 @@ js = must_replace("""          if ((r.hrs[w] || 0) > 0) { if (firstWk < 0) first
                   """          if ((r.hrs[w] || 0) > 0) { if (firstWk < 0) firstWk = i; lastWk = i; h = Math.max(h, r.hrs[w]); }""", where=js)
 
 js = must_replace('      var ok = el("button", "mlog-sm", "Entered in Salesforce");',
-                  '      var ok = el("button", "mlog-sm", ALLOC.configured && ALLOC.approver && a.kind !== "remove" ? "Enter in NetSuite" : "Entered in NetSuite");', where=js)
+                  '      var ok = el("button", "mlog-sm", ALLOC.configured && ALLOC.approver ? "Enter in NetSuite" : "Entered in NetSuite");', where=js)
+
+# ---- 3b-ii. unallocate (Mark, Oct 21 2026): a drawer button that opens the same form in
+# "Remove from a project" mode; the form then writes the removal to NetSuite for approvers.
+js = must_replace('''    var allocBtn = el("button", "ct-ghost", "+ Allocation");
+    allocBtn.type = "button";
+    allocBtn.addEventListener("click", function () { toggleForm("alloc"); });
+    tools.appendChild(drWeekSel); tools.appendChild(actBtn); tools.appendChild(allocBtn);''',
+'''    var allocBtn = el("button", "ct-ghost", "+ Allocation");
+    allocBtn.type = "button";
+    allocBtn.addEventListener("click", function () { S.allocPrefillKind = "add"; toggleForm("alloc"); });
+    var unallocBtn = el("button", "ct-ghost", "\\u2212 Unallocate");
+    unallocBtn.type = "button";
+    unallocBtn.title = "Take a consultant off a project for a range of weeks";
+    unallocBtn.addEventListener("click", function () { S.allocPrefillKind = "remove"; formOpen = null; toggleForm("alloc"); });
+    tools.appendChild(drWeekSel); tools.appendChild(actBtn); tools.appendChild(allocBtn); tools.appendChild(unallocBtn);''', where=js)
+js = must_replace('''    if (kind === "project") changeSel.value = "remove";
+    syncKind();''', '''    if (kind === "project") changeSel.value = "remove";
+    if (S.allocPrefillKind) { changeSel.value = S.allocPrefillKind; S.allocPrefillKind = ""; }
+    syncKind();''', where=js)
 for old, new in [
     ('" hrs/wk), not yet in Salesforce"', '" hrs/wk), not yet in NetSuite"'),
     ('"Pending Salesforce entry"', '"Pending NetSuite entry"'),

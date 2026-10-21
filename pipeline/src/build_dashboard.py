@@ -205,7 +205,7 @@ def projection():
     med = drifts[len(drifts) // 2] if len(drifts) % 2 else (drifts[len(drifts) // 2 - 1] + drifts[len(drifts) // 2]) / 2
     cur = D.ORG_MONTHLY[D.ORG_THIS_IDX][1]
     names = {m: _dt.date(int(m[:4]), int(m[4:]), 1).strftime("%b") for m in finals}
-    parts = [f"{names[m]} read {pct_str(v)}% on day {day} and closed at {pct_str(fv)}% ({(fv - v) * 100:+.1f} pts)"
+    parts = [f"{names[m]} read {v * 100:.1f}% on day {day} and closed at {fv * 100:.1f}% ({(fv - v) * 100:+.1f} pts)"
              for m, v, fv in sorted(basis)]
     mid_txt = ""
     if mid_drifts:
@@ -217,7 +217,66 @@ def projection():
             f"and month end in {len(drifts)} earlier month{'s' if len(drifts) != 1 else ''} with history "
             f"({'; '.join(parts)}).{mid_txt} The basis grows every week the refresh runs.")
     return {"value": cur + med, "drift": med, "mid_drift": (mid_drifts[len(mid_drifts) // 2] if mid_drifts else None),
-            "n": len(drifts), "note": note, "day": day}
+            "n": len(drifts), "note": note, "day": day, "parts": parts}
+
+
+def projection_why():
+    """A visible explanation of the projected month close (Mark, Oct 21 2026: "add an explanation of
+    why utilization is projected to drop"). What today's figure is made of (closed weeks are billed
+    hours, the weeks ahead are scheduled hours), how the two halves of this month compare
+    (ORG_WEEKS: closed vs scheduled utilization, and the PTO each carries), and the arithmetic
+    (how the months with history moved from this day-of-month to their close). "" when there is
+    no projection."""
+    import datetime as _dt
+    proj = projection()
+    if not proj:
+        return ""
+    this_label, cur = D.ORG_MONTHLY[D.ORG_THIS_IDX]
+    month = this_label[:3]
+    drift = proj["drift"] * 100.0
+    direction = "lower than" if drift < -0.05 else ("higher than" if drift > 0.05 else "about the same as")
+
+    # this month so far: closed weeks (Friday already past) against the weeks still ahead
+    evidence = ""
+    build = getattr(P, "BUILD_DATE", None)
+    wk = [w for w in getattr(D, "ORG_WEEKS", []) if w[2] > 0]
+    if build and wk:
+        today = _dt.date.fromisoformat(build)
+        closed = [w for w in wk if _dt.date.fromisoformat(w[0]) + _dt.timedelta(days=4) < today]
+        ahead = [w for w in wk if w not in closed]
+        def agg(ws):
+            b, d, p = (sum(w[i] for w in ws) for i in (1, 2, 3))
+            return (b / d if d else 0.0), (p / d if d else 0.0)
+        if closed and ahead:
+            cu, cp = agg(closed); au, ap = agg(ahead)
+            lab = lambda ws: " and ".join(_dt.date.fromisoformat(w[0]).strftime("%b %-d") for w in ws) if len(ws) <= 2 \
+                else f"{_dt.date.fromisoformat(ws[0][0]).strftime('%b %-d')} to {_dt.date.fromisoformat(ws[-1][0]).strftime('%b %-d')}"
+            evidence = (f" This month so far: the closed weeks (of {lab(closed)}) billed {pct_str(cu)}% of available hours, "
+                        f"while the weeks still ahead (of {lab(ahead)}) are scheduled at {pct_str(au)}%; the closed weeks carry "
+                        f"{cp * 100:.0f}% of their hours as time off against {ap * 100:.0f}% in the weeks ahead - time off is "
+                        f"entered as it is taken, so the scheduled weeks have not absorbed theirs yet.")
+    t = getattr(D, "S3_TOTAL", None) or {}
+    s3 = ""
+    if t.get("alloc"):
+        diff = t["actual"] - t["alloc"]
+        pct = diff / t["alloc"] * 100.0
+        n_under = sum(1 for c in getattr(D, "S3_CONSULTANTS", []) if sum(p[2] for p in c[2]) < sum(p[1] for p in c[2]))
+        s3 = (f" (Project allocations are not the gap: over the last 4 complete weeks the team billed {t['actual']:,.0f} of "
+              f"{t['alloc']:,.0f} allocated hours, {pct:+.0f}%, with {n_under} of {t.get('people', 0)} employees under their "
+              f"allocation - see Allocation vs Actual.)" if diff >= 0 else
+              f" Over the last 4 complete weeks the team also billed {t['actual']:,.0f} of {t['alloc']:,.0f} allocated hours "
+              f"({pct:+.0f}%), {n_under} of {t.get('people', 0)} employees under their allocation - see Allocation vs Actual.")
+    history = "; ".join(proj.get("parts", []))
+    mid = proj.get("mid_drift")
+    mid_txt = f" From mid-month the typical move is {mid * 100:+.1f} pts." if mid is not None else ""
+    why = (f"<b>Why {month} is projected to close {direction} today's {cur * 100:.1f}%.</b> The {month} figure mixes two "
+           f"things: the weeks already closed count hours actually billed, while the rest of the month still counts "
+           f"scheduled hours. Scheduled hours run high - PTO and sick days are entered after the fact, projects wind "
+           f"down or pause, and late timesheets sit at zero until filed - so the figure drifts as each week closes."
+           f"{evidence}{s3} The projection applies how earlier months moved from day {proj['day']} to their close"
+           f"{': ' + history if history else ''}; the median move is {drift:+.1f} pts, so {month} is projected to close "
+           f"near {proj['value'] * 100:.1f}%.{mid_txt} The basis grows every week the refresh runs.")
+    return f'  <p class="proj-why">{why}</p>\n'
 
 
 def org_chart():
@@ -291,7 +350,7 @@ def org_chart():
             f'text-anchor="middle">{e(label)}{" *" if i in thin else ""}</text>')
         if proj and i == ti:
             ly = round(y_of(proj["value"]) - 10, 1) if y_of(proj["value"]) < y else round(y_of(proj["value"]) + 16, 1)
-            labels.append(f'<text x="{x}" y="{ly}" class="util-proj-label" text-anchor="middle">proj. {pct_str(proj["value"])}%</text>')
+            labels.append(f'<text x="{x}" y="{ly}" class="util-proj-label" text-anchor="middle">proj. {proj["value"] * 100:.1f}%</text>')
     out.append("    " + "".join(labels))
     out.append("  </svg>")
     return "\n".join(out)
@@ -578,7 +637,7 @@ def headline_bands():
     figs = [f'<span class="headline-fig headline-current">{pct_str(this_v)}% {this_label[:3]}</span>']
     if proj:
         figs.append(f'<span class="headline-fig headline-proj" title="{e(proj["note"])}">'
-                    f'proj. close {pct_str(proj["value"])}%</span>')
+                    f'proj. close {proj["value"] * 100:.1f}%</span>')
     for k, (lab, v) in enumerate(fc):
         tag = ' <span class="headline-fc-tag">(bookings still filling in)</span>' if (D.ORG_THIS_IDX + 1 + k) in thin else ""
         figs.append(f'<span class="headline-fig headline-forecast">{pct_str(v)}% {lab[:3]}{tag}</span>')
@@ -648,7 +707,7 @@ def build():
     <span class="legend-item"><span class="swatch" style="background:var(--status-serious)"></span>Below by 20&ndash;50 pts</span>
     <span class="legend-item"><span class="swatch" style="background:var(--status-critical)"></span>Below by &ge;50 pts</span>
   </div>
-</section>
+{projection_why()}</section>
 </section>
 
 

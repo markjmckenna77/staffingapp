@@ -105,6 +105,10 @@
 .month-this-tag { font-size: 10px; fill: var(--muted-ink); font-weight: 600; }
 .chart-legend { display: flex; gap: 18px; padding: 4px 0 8px; font-size: 12px; color: var(--text-secondary); }
 .legend-item { display: inline-flex; align-items: center; gap: 6px; }
+/* Oct 21 2026 (Mark): why the month is projected to close where it is */
+.proj-why { margin: 2px 0 10px; padding: 8px 12px; font-size: 12px; line-height: 1.5; color: var(--text-secondary);
+  background: color-mix(in srgb, var(--text-primary) 4%, transparent); border-left: 3px solid var(--accent); border-radius: 0 6px 6px 0; }
+.proj-why b { color: var(--text-primary); }
 .legend-dot, .legend-dot-current { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); display: inline-block; }
 .legend-dot-open { width: 9px; height: 9px; border-radius: 50%; border: 2px solid var(--accent); display: inline-block; background: var(--surface-1); }
 

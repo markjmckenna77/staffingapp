@@ -161,6 +161,7 @@ CHAIN = [
     ["drawer_form_hold.py", "dashboard_artifact.html"],
     ["roles_alloc_only.py", "dashboard_artifact.html"],
     ["recruiting_roles_format.py", "dashboard_artifact.html"],
+    ["open_roles_restyle.py", "dashboard_artifact.html"],
     ["recruiting_band_toggle.py", "dashboard_artifact.html"],
     "HIDE",
     ["collapsible_sections.py", "dashboard_artifact.html"],

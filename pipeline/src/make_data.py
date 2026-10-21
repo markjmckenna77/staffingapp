@@ -337,11 +337,20 @@ def w(path, header, body):
     print(f"wrote {path}")
 
 
+# ---------------------------------------------------------------- org weeks (Oct 21 2026)
+# [(monday iso, billable, denom, pto)] for the current month, all named practices; closed vs
+# scheduled is decided in build_dashboard against the build date.
+try:
+    ORG_WEEKS = [(r[0], f(r[1]), f(r[2]), f(r[3])) for r in (x[:4] for x in rows("raw/orgweeks.json"))]
+except (FileNotFoundError, KeyError):
+    ORG_WEEKS = []
+
 sd = [f'GENERATED = {GENERATED!r}', f'MEETING_DATE = {MEETING_DATE!r}',
       f'THIS_WEEK = {THIS_WEEK!r}', f'HOURS_CUTOFF = {HOURS_CUTOFF!r}',
       'SKILLS_CSV = "skills_matrix.csv"', '',
       f'MONTHS = {MONTHS!r}', f'MONTH_LABELS = {MONTH_LABELS!r}', f'COHORT_MONTHS = {COHORT_MONTHS!r}', '',
       f'ORG_MONTHLY = {pp.pformat(ORG_MONTHLY)}', f'ORG_THIS_IDX = {ORG_THIS_IDX}', '',
+      f'ORG_WEEKS = {ORG_WEEKS!r}', '',
       f'COHORT = {pp.pformat(COHORT)}', '',
       'ALLOCATIONS = {}', 'OPEN_ROLES = []', '',
       f'S3_TOTAL = {S3_TOTAL!r}', '', f'S3_WEEKS = {S3_WEEKS!r}', '',

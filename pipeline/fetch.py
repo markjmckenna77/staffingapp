@@ -4,7 +4,7 @@ Runs the same queries the old Claude runbook ran by hand (claude/staffing-dashbo
 step 2) and writes them in the shapes the generators read:
 
     raw/avail.json raw/alloc.json raw/opendemand.json raw/roster.json raw/contractors.json raw/projmeta.json
-    raw/s3.json raw/cohort.json raw/history.json            -> make_data.py
+    raw/s3.json raw/cohort.json raw/history.json raw/orgweeks.json -> make_data.py
     util_raw.json grand_total.json zero_denom_weeks.json     -> make_util_data.py
 
 Every column is cast with ::string and COALESCE'd in SQL so the values are byte-identical to the
@@ -105,6 +105,14 @@ FROM {obj['avail']}
 WHERE PRACTICE = 'Grand Total' AND DATE_MONTH_ID BETWEEN {p['grand_from']} AND {p['grand_to']}
 GROUP BY DATE_MONTH_ID
 ORDER BY 1"""
+    # Oct 21 2026 (Mark): the weeks of the current month, org-wide (all named practices), so the
+    # Utilization Summary can say how the closed weeks read against the weeks still scheduled.
+    q["orgweeks"] = f"""SELECT TO_CHAR(WEEK_FIRST_DAY_AT,'YYYY-MM-DD'), SUM(HRS_BILLABLE)::string, SUM(HRS_UTIL_DENOM)::string,
+  SUM(HRS_TIME_OFF)::string
+FROM {obj['avail']}
+WHERE PRACTICE <> 'Grand Total' AND DATE_MONTH_ID = {p['current_month']}
+GROUP BY WEEK_FIRST_DAY_AT
+ORDER BY 1"""
     q["zero"] = f"""SELECT {s('CONSULTANT_NAME')}, DATE_MONTH_ID::string, TO_CHAR(WEEK_FIRST_DAY_AT,'YYYY-MM-DD'),
   COALESCE(HRS_BILLABLE::string,'0'), COALESCE(HRS_TIME_OFF::string,'0'), COALESCE(HRS_UTIL_DENOM::string,'0')
 FROM {obj['avail']}
@@ -190,7 +198,7 @@ def fetch(p, run, out_dir, objects=None):
         got[name] = rows
         counts[name] = len(rows)
 
-    for name in ("avail", "alloc", "opendemand", "roster", "contractors", "projmeta", "s3", "cohort", "history"):
+    for name in ("avail", "alloc", "opendemand", "roster", "contractors", "projmeta", "s3", "cohort", "history", "orgweeks"):
         with open(os.path.join(out_dir, "raw", f"{name}.json"), "w", encoding="utf-8") as fh:
             json.dump({"result_set": {"data": got[name], "resultSetMetaData": {"numRows": len(got[name])}}}, fh)
 

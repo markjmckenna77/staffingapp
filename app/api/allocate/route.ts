@@ -1,10 +1,14 @@
 // /api/allocate - make a staffing allocation for real (Oct 5 2026).
 //
 //   GET   { system: "netsuite", configured, dryRun, approver, ping? }   (ping=1, admins only)
-//   POST  either { allocationId }                 push an existing proposed allocation
+//   POST  either { allocationId }                 push an existing proposed allocation or removal
 //         or     { consultant, project, hours, weeks, roleKey?, roleLabel?, roleTitle?, projectId?,
 //                  note?, key?, label?, author?, week?, fillOpenRole? }
 //                                                 record it in the allocations collection and push it
+//         or     { kind: "remove", consultant, project, weeks, hours?, projectId?, note?, key?, label?,
+//                  author?, week? }               take the consultant off the project for those weeks
+//                                                 (Mark, Oct 21 2026: "unallocate") - the Resource
+//                                                 Allocations are deleted, ended or split in NetSuite
 //
 // The write goes to NetSuite (lib/netsuite.ts), which is the system of record: Snowflake's
 // CONS_* tables are rebuilt from NetSuite's Resource Allocations by Fivetran + dbt, so the
@@ -15,7 +19,7 @@
 // allocation is saved as a proposal and the response says so (409 netsuite_not_configured).
 import { NextResponse } from "next/server";
 import { actor, fail, isAdmin, isApprover, jsonBody, unauthorized } from "@/lib/api";
-import { createAllocation, netsuiteConfigured, netsuiteDryRun, netsuitePing } from "@/lib/netsuite";
+import { createAllocation, netsuiteConfigured, netsuiteDryRun, netsuitePing, removeAllocation } from "@/lib/netsuite";
 import { addDoc, getDoc, updateDoc } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
@@ -57,8 +61,24 @@ export async function POST(req: Request) {
       if (!cur) throw Object.assign(new Error("not_found"), { code: "not_found" });
       id = cur.id;
       a = cur.body as unknown as AllocDoc;
-      if (a.kind === "remove") return NextResponse.json({ error: "bad_body", detail: "removals are not pushed from here yet" }, { status: 400 });
       if (a.status === "entered") return NextResponse.json({ error: "already_entered", id }, { status: 409 });
+    } else if (b.kind === "remove") {
+      const weeks = Array.isArray(b.weeks) ? (b.weeks as unknown[]).map(String).filter((w) => /^\d{4}-\d{2}-\d{2}$/.test(w)) : [];
+      const consultant = String(b.consultant ?? "").trim();
+      const project = String(b.project ?? "").trim();
+      if (!consultant || !project || !weeks.length) {
+        return NextResponse.json({ error: "bad_body", detail: "consultant, project and weeks (ISO Mondays) are required" }, { status: 400 });
+      }
+      a = {
+        kind: "remove", consultant, project,
+        projectId: Number.isFinite(Number(b.projectId)) && Number(b.projectId) > 0 ? Number(b.projectId) : undefined,
+        roleKey: "", roleLabel: "", roleTitle: "",
+        hours: Number(b.hours) > 0 ? Number(b.hours) : 0, weeks: weeks.sort(), status: "proposed", note: String(b.note ?? "").slice(0, 1000),
+        key: String(b.key ?? ""), label: String(b.label ?? ""), author: String(b.author ?? who),
+        ts: Date.now(), week: String(b.week ?? weeks[0]), fillOpenRole: false,
+      };
+      const doc = await addDoc("allocations", a as unknown as Record<string, unknown>, who);
+      id = doc.id;
     } else {
       const weeks = Array.isArray(b.weeks) ? (b.weeks as unknown[]).map(String).filter((w) => /^\d{4}-\d{2}-\d{2}$/.test(w)) : [];
       const hours = Number(b.hours);
@@ -85,6 +105,17 @@ export async function POST(req: Request) {
     if (!netsuiteConfigured()) {
       return NextResponse.json({ error: "netsuite_not_configured", id, status: "proposed",
         detail: "Saved as a proposal. Set NS_* in Vercel to push allocations to NetSuite." }, { status: 409 });
+    }
+
+    if (a.kind === "remove") {
+      const removed = await removeAllocation({
+        consultant: a.consultant, project: a.project, projectId: a.projectId, weeks: a.weeks, note: a.note, requestedBy: a.author || who,
+      });
+      const rpatch: Record<string, unknown> = removed.dryRun
+        ? { netsuitePreview: removed, enteredSystem: "netsuite (dry run)" }
+        : { status: "entered", enteredTs: Date.now(), enteredBy: who, netsuite: removed, enteredSystem: "netsuite" };
+      const rdoc = await updateDoc("allocations", id, rpatch, who);
+      return NextResponse.json({ ok: true, id, kind: "remove", status: rdoc.body.status, dryRun: removed.dryRun, netsuite: removed });
     }
 
     const result = await createAllocation({

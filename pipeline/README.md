@@ -76,3 +76,20 @@ workflow's secrets, then `python pipeline/run.py` (add `--publish` to upload).
   were allocated); consultant rows open the accounts they did not bill to (`S3_PAIRS`).
 - The "Generated ..." footer is gone (an empty `<footer class="dash-footer">` stays as the anchor the
   utilization and collapsible-section passes insert before).
+
+## Oct 21 2026 changes (Mark)
+- Open Roles & Recruiting (`src/open_roles_restyle.py`, runs after `recruiting_roles_format.py`): each role's
+  title row is a light-blue band and is itself the click target for the staffing suggestions (the separate
+  "Staffing Suggestions and Allocations" line is gone; a small "suggestions & allocations" hint sits under
+  the title until the role is open). The recruiting-update callout is grey instead of yellow, so the amber
+  week cells are the only yellow in the section.
+- Unallocate: the comment drawer has a "− Unallocate" button that opens the allocation form in "Remove from
+  a project" mode (consultant, project from their current bookings, hours and weeks prefilled). For approvers
+  with NetSuite configured it writes the removal (`POST /api/allocate` with `kind: "remove"` →
+  `lib/netsuite.removeAllocation`): the consultant's Resource Allocations on that project are deleted when
+  they fall inside the weeks, ended / started later when they overlap one edge, or split when they span the
+  window. Proposed removals on the list can be pushed with "Enter in NetSuite" too.
+- Utilization Summary: a visible "Why <month> is projected to close ..." paragraph under the chart - how the
+  closed weeks of this month read against the weeks still scheduled (new `orgweeks` pull: billable, denominator
+  and time off per week of the current month, all named practices), the last-4-weeks allocation vs actual,
+  and the day-of-month drift the projection is built from. The projected close shows one decimal.

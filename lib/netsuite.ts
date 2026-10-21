@@ -258,6 +258,121 @@ export async function createAllocation(a: NsAllocationInput): Promise<NsAllocati
   return result;
 }
 
+// ---- the unallocate (Mark, Oct 21 2026) -------------------------------------------------
+
+export type NsRemovalInput = {
+  consultant: string;
+  project: string;
+  projectId?: number;
+  weeks: string[];           // Monday ISO dates to take the consultant off the project for
+  note?: string;
+  requestedBy?: string;
+};
+
+export type NsRemovalAction = {
+  allocationId: number;
+  was: { startDate: string; endDate: string; percentOfTime: number; numberHours: number; unit: string };
+  action: "deleted" | "ended" | "started_later" | "split";
+  endDate?: string;          // for "ended": the new end
+  startDate?: string;        // for "started_later": the new start
+  tailAllocationId?: number; // for "split": the allocation created for the part after the window
+};
+
+export type NsRemovalResult = {
+  dryRun: boolean;
+  employeeId: number;
+  employeeName: string;
+  projectId: number;
+  projectName: string;
+  startDate: string;
+  endDate: string;
+  actions: NsRemovalAction[];
+};
+
+type EmpAlloc = { id: number; startdate: string; enddate: string; percentoftime: number; numberhours: number;
+  allocationunit: string; allocationtype: string; notes: string; role: string };
+
+/** The employee's Resource Allocations on a project that overlap [from, to]. */
+async function findEmployeeAllocations(employeeId: number, projectId: number, from: string, to: string): Promise<EmpAlloc[]> {
+  const rows = await suiteql(
+    `SELECT ra.id, ra.startdate, ra.enddate, ra.percentoftime, ra.numberhours, ra.allocationunit, ra.allocationtype, ra.notes, ` +
+    `ra.${F.roleField} AS role FROM resourceallocation ra ` +
+    `WHERE ra.allocationresource = ${employeeId} AND ra.project = ${projectId} ` +
+    `AND ra.enddate >= TO_DATE('${from}', 'YYYY-MM-DD') AND ra.startdate <= TO_DATE('${to}', 'YYYY-MM-DD') ORDER BY ra.startdate`);
+  return rows.map((r) => ({
+    id: Number(r.id), startdate: isoDate(String(r.startdate ?? "")), enddate: isoDate(String(r.enddate ?? "")),
+    percentoftime: Number(r.percentoftime ?? 0), numberhours: Number(r.numberhours ?? 0),
+    allocationunit: String(r.allocationunit ?? ""), allocationtype: String(r.allocationtype ?? ""),
+    notes: String(r.notes ?? ""), role: String(r.role ?? ""),
+  }));
+}
+
+/**
+ * Takes the employee off the project for the weeks given (Monday of the first through Friday of
+ * the last). Every Resource Allocation of theirs on that project that overlaps the window is
+ * trimmed so none of it falls inside the window:
+ *   - entirely inside the window           -> deleted
+ *   - starts before, ends inside            -> ended the day before the window
+ *   - starts inside, ends after             -> starts the day after the window
+ *   - starts before and ends after          -> ended before the window, and a copy created for
+ *                                              the part after it (same type, unit and amount)
+ * Each surviving record gets a note saying who removed what from the dashboard. Nothing else on
+ * the project (other people, generic open-role allocations) is touched.
+ */
+export async function removeAllocation(a: NsRemovalInput): Promise<NsRemovalResult> {
+  if (!netsuiteConfigured()) throw nerr("netsuite_not_configured");
+  if (!a.weeks?.length) throw nerr("bad_body", "removal has no weeks");
+  const dryRun = netsuiteDryRun();
+  const weeks = a.weeks.slice().sort();
+  const from = weeks[0], to = addDays(weeks[weeks.length - 1], 4);
+
+  const emp = await findEmployee(a.consultant);
+  const proj = await findProject(a.project, a.projectId);
+  const allocs = await findEmployeeAllocations(emp.id, proj.id, from, to);
+  if (allocs.length === 0) throw nerr("netsuite_allocation_not_found", { consultant: emp.name, project: proj.name, from, to });
+
+  const stamp = `${today()} staffing dashboard${a.requestedBy ? ` (${a.requestedBy})` : ""}`;
+  const why = a.note?.trim() ? ` - ${a.note.trim()}` : "";
+  const result: NsRemovalResult = { dryRun, employeeId: emp.id, employeeName: emp.name, projectId: proj.id, projectName: proj.name,
+    startDate: from, endDate: to, actions: [] };
+
+  for (const al of allocs) {
+    const was = { startDate: al.startdate, endDate: al.enddate, percentOfTime: al.percentoftime, numberHours: al.numberhours, unit: al.allocationunit };
+    const before = al.startdate < from, after = al.enddate > to;
+    const act: NsRemovalAction = { allocationId: al.id, was, action: before && after ? "split" : before ? "ended" : after ? "started_later" : "deleted" };
+    if (act.action === "ended" || act.action === "split") act.endDate = addDays(from, -1);
+    if (act.action === "started_later") act.startDate = addDays(to, 1);
+    result.actions.push(act);
+    if (dryRun) continue;
+
+    const note = `${stamp}: removed ${from} to ${to}${why}\r\n${al.notes}`.slice(0, 3900);
+    if (act.action === "deleted") {
+      await ns("DELETE", `/services/rest/record/v1/resourceAllocation/${al.id}`);
+    } else if (act.action === "ended") {
+      await ns("PATCH", `/services/rest/record/v1/resourceAllocation/${al.id}`, { endDate: act.endDate, notes: note });
+    } else if (act.action === "started_later") {
+      await ns("PATCH", `/services/rest/record/v1/resourceAllocation/${al.id}`, { startDate: act.startDate, notes: note });
+    } else {
+      // split: shorten the original, then recreate the tail with the same shape
+      await ns("PATCH", `/services/rest/record/v1/resourceAllocation/${al.id}`, { endDate: act.endDate, notes: note });
+      const body: Record<string, unknown> = {
+        allocationResource: { id: String(emp.id) }, project: { id: String(proj.id) },
+        startDate: addDays(to, 1), endDate: al.enddate,
+        allocationType: { id: al.allocationtype || F.hardTypeId },
+        allocationUnit: { id: al.allocationunit || "P" },
+        notes: `${stamp}: continuation of allocation ${al.id} after the removed weeks${why}`.slice(0, 3900),
+      };
+      if ((al.allocationunit || "P") === "H") body.numberHours = al.numberhours; else body.percentOfTime = al.percentoftime;
+      if (al.role) body[F.roleField] = al.role;
+      if (process.env.NS_REQUESTED_BY_ID) body.requestedBy = { id: process.env.NS_REQUESTED_BY_ID };
+      const created = await ns<unknown>("POST", "/services/rest/record/v1/resourceAllocation", body);
+      const idm = /\/resourceAllocation\/(\d+)/.exec(created.headers.get("location") ?? "");
+      if (idm) act.tailAllocationId = Number(idm[1]);
+    }
+  }
+  return result;
+}
+
 /** Health check for /api/allocate GET: can we reach NetSuite with these credentials? */
 export async function netsuitePing(): Promise<{ ok: boolean; detail?: unknown }> {
   if (!netsuiteConfigured()) return { ok: false, detail: "not configured" };
